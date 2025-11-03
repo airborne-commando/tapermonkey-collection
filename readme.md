@@ -1,34 +1,36 @@
-# Universal Background Check Exporter
+# Main repo for tapermonkey scripts for simple OSINT.
+
+## Universal Background Check Exporter
 
 Export results from multiple background check sites: FastBackgroundCheck, FastPeopleSearch, and ZabaSearch
 
 Can only do one page each, comes with hyperlinks.
 
-# Save as
+## Save as
 
 - JSON
 - Text
 
 Also has the option to check ones voter status thoughout the states (less advanced, can't check political demographic).
 
-# How to use:
+## How to use:
 - Install tapermonkey/greasemonkey
 - copy paste this script
 - ???
 - profit
 
-# Voter extraction (lite)
+## Voter extraction (lite)
 
 The voter extraction tool that is linked here is pretty lite, it isn't accurate with the mm-dd but it is accurate with the year. It is only accurate with the first-lastname, street, city, state and zipcodes. You also cannot get voter demographics such as what party this person belongs to.
 
 ---
 
-# Voter reg status: Tapermonkey edition
+## Voter reg status: Tapermonkey edition
 
 Due to chrome driver being blocked, this would probably be the better solution!
 
 
-# CSV file input example:
+## CSV file input example:
 
 
     zip,firstname,lastname,MM/DD/YYYY
@@ -41,17 +43,17 @@ and even for continuous days of that month.
 
 Feel free to input the values, you can repeat this; will need to run in private mode (mobile); also can delete cookies in dev mode (desktop).
 
-# Firefox
+## Firefox
 
 Right click inspect element > storage > cookies > https://www.pavoterservices.pa.gov > Delete all session cookies
 
-# Chrome
+## Chrome
 
 Right click inspect element > storage > cookies > https://www.pavoterservices.pa.gov > clear
 
 Use this when dealing with a CAPTCHA, how would you know? if the error sign isn't showing up.
 
-# Example output
+## Example output
 
 
     firstName,lastName,dob,zip,county,status,result,timestamp
@@ -116,7 +118,7 @@ Use this when dealing with a CAPTCHA, how would you know? if the error sign isn'
 
 ---
 
-# Breach.VIP and reddit profile analyzer
+## Breach.VIP and reddit profile analyzer
 
 Search breach data and analyze Reddit users
 
@@ -130,7 +132,7 @@ Find results via:
 * phone number
 * full name
 
-# R00M101
+## R00M101
 
 * Input reddit username (even deleted).
 
