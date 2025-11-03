@@ -148,14 +148,14 @@ Make the GUI look more clean perhaps?
 
 ---
 
-<img width="694" height="664" alt="image" src="./examples/505825291-8e3da9bd-efd1-477f-97de-4c7dbc48fe1b.png" />
+<img width="694" height="664" alt="image" src="../examples/505825291-8e3da9bd-efd1-477f-97de-4c7dbc48fe1b.png" />
 
 
-<img width="704" height="756" alt="image" src="./examples/505825464-90de10f9-a0b6-491f-a8a8-75323a4d04df.png" />
+<img width="704" height="756" alt="image" src="../examples/505825464-90de10f9-a0b6-491f-a8a8-75323a4d04df.png" />
 
 
-<img width="710" height="894" alt="image" src="./examples/505825940-41342a8a-d01d-4448-b3e6-7ec7156a2198.png" />
+<img width="710" height="894" alt="image" src="../examples/505825940-41342a8a-d01d-4448-b3e6-7ec7156a2198.png" />
 
-<img width="698" height="928" alt="image" src="./examples/505826377-e0bf9f98-0f82-4db5-ad99-daeea82103ec.png" />
+<img width="698" height="928" alt="image" src="../examples/505826377-e0bf9f98-0f82-4db5-ad99-daeea82103ec.png" />
 
-<img width="704" height="756" alt="image" src="./examples/505825464-90de10f9-a0b6-491f-a8a8-75323a4d04df.png" />
+<img width="704" height="756" alt="image" src="../examples/505825464-90de10f9-a0b6-491f-a8a8-75323a4d04df.png" />

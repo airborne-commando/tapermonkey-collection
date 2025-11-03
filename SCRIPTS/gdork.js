@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Dorking Assistant
-// @updateURL    
-// @downloadURL  
+// @updateURL    https://raw.githubusercontent.com/airborne-commando/tapermonkey-collection/refs/heads/main/SCRIPTS/gdork.sh
+// @downloadURL  https://raw.githubusercontent.com/airborne-commando/tapermonkey-collection/refs/heads/main/SCRIPTS/gdork.sh
 // @namespace    http://tampermonkey.net/
 // @version      2.0
 // @description  Interactive Google Dorking tool with updated operators based on Google Advanced Search

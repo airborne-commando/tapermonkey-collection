@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Breach VIP & Reddit Analyzer with Privacy Enhancements
 // @namespace    http://tampermonkey.net/
-// @updateURL    https://raw.githubusercontent.com/airborne-commando/tapermonkey-collection/refs/heads/main/Breachvip%26reddit.js
-// @downloadURL  https://raw.githubusercontent.com/airborne-commando/tapermonkey-collection/refs/heads/main/Breachvip%26reddit.js
+// @updateURL    https://raw.githubusercontent.com/airborne-commando/tapermonkey-collection/refs/heads/main/SCRIPTS/Breachvip%26reddit.js
+// @downloadURL  https://raw.githubusercontent.com/airborne-commando/tapermonkey-collection/refs/heads/main/SCRIPTS/Breachvip%26reddit.js
 // @version      1.6
 // @description  Search breach data and analyze Reddit users with privacy controls and modular config
 // @author       airborne-commando
