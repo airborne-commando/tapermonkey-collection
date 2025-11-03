@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @updateURL    https://raw.githubusercontent.com/airborne-commando/tapermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
 // @downloadURL  https://raw.githubusercontent.com/airborne-commando/tapermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
-// @version      2.2.2
+// @version      2.2.3
 // @description  Export results from multiple background check sites: FastBackgroundCheck, FastPeopleSearch, ZabaSearch, and Vote.org with API integration
 // @author       airborne-commando
 // @match        https://www.fastbackgroundcheck.com/*
@@ -2155,26 +2155,29 @@ createUI() {
     // Quick Maps Section
     const quickMapsSection = document.createElement('div');
     quickMapsSection.style.cssText = 'margin-bottom: 15px; padding: 10px; background: #fff3cd; border-radius: 4px; border: 1px solid #ffeaa7;';
-	quickMapsSection.innerHTML = `
-		<div style="font-weight: bold; margin-bottom: 8px; color: #856404;">🗺️ Quick Maps:</div>
-		<div style="margin-bottom: 8px;">
-			<input type="text" id="ubcQuickMaps" placeholder="Enter address for maps..."
-				   style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px; margin-bottom: 8px;">
-			<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-				<button id="ubcGoogleMapsBtn" style="background: #4285f4; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 11px;">
-					Google Maps
-				</button>
-				<button id="ubcBingMapsBtn" style="background: #008373; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 11px;">
-					Bing Maps
-				</button>
-				<button id="ubcOpenstreetMapsBtn" style="background: #7ebc6f; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+    quickMapsSection.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 8px; color: #856404;">🗺️ Quick Maps:</div>
+        <div style="margin-bottom: 8px;">
+            <input type="text" id="ubcQuickMaps" placeholder="Enter address for maps..."
+                   style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px; margin-bottom: 8px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button id="ubcGoogleMapsBtn" style="background: #4285f4; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                    Google Maps
+                </button>
+                <button id="ubcBingMapsBtn" style="background: #008373; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                    Bing Maps
+                </button>
+                <button id="ubcOpenstreetMapsBtn" style="background: #7ebc6f; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 11px;">
                 OpenStreetMap
             </button>
-			</div>
-		</div>
-		<div style="font-size: 10px; color: #666;">
-			Quick address lookup on both mapping platforms
-		</div>
+                <button id="ubcOpenEarth" style="background: #4285f4; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                Google Earth
+            </button>
+            </div>
+        </div>
+        <div style="font-size: 10px; color: #666;">
+            Quick address lookup on both mapping platforms
+        </div>
 `;
 
     // Export options
@@ -2249,29 +2252,37 @@ createUI() {
     document.getElementById('ubcImportBtn').onclick = () => this.importSearchData();
 
     // Add event listener for quick maps
-	document.getElementById('ubcGoogleMapsBtn').onclick = () => {
-		const address = document.getElementById('ubcQuickMaps').value.trim();
-		if (address) {
-			const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-			window.open(mapsUrl, '_blank');
-		}
-	};
+    document.getElementById('ubcGoogleMapsBtn').onclick = () => {
+        const address = document.getElementById('ubcQuickMaps').value.trim();
+        if (address) {
+            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+            window.open(mapsUrl, '_blank');
+        }
+    };
 
-	document.getElementById('ubcBingMapsBtn').onclick = () => {
-		const address = document.getElementById('ubcQuickMaps').value.trim();
-		if (address) {
-			const bingUrl = `https://www.bing.com/maps?q=${encodeURIComponent(address)}`;
-			window.open(bingUrl, '_blank');
-		}
-	};
+    document.getElementById('ubcBingMapsBtn').onclick = () => {
+        const address = document.getElementById('ubcQuickMaps').value.trim();
+        if (address) {
+            const bingUrl = `https://www.bing.com/maps?q=${encodeURIComponent(address)}`;
+            window.open(bingUrl, '_blank');
+        }
+    };
 
-	document.getElementById('ubcOpenstreetMapsBtn').onclick = () => {
-		const address = document.getElementById('ubcQuickMaps').value.trim();
-		if (address) {
-			const SteetURL = `https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`;
-			window.open(SteetURL, '_blank');
-		}
-	};
+    document.getElementById('ubcOpenstreetMapsBtn').onclick = () => {
+        const address = document.getElementById('ubcQuickMaps').value.trim();
+        if (address) {
+            const SteetURL = `https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`;
+            window.open(SteetURL, '_blank');
+        }
+    };
+
+    document.getElementById('ubcOpenEarth').onclick = () => {
+        const address = document.getElementById('ubcQuickMaps').value.trim();
+        if (address) {
+            const EarthURL = `https://earth.google.com/web/search/${encodeURIComponent(address)}`;
+            window.open(EarthURL, '_blank');
+        }
+    };
 
     // Add event listeners for advanced maps AFTER the section is added to DOM
     setTimeout(() => {
