@@ -2170,7 +2170,7 @@ createUI() {
             </div>
         </div>
         <div style="font-size: 10px; color: #666;">
-            Quick address lookup on both mapping platforms
+            Quick address lookup on all mapping platforms
         </div>
 `;
 
