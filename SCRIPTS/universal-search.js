@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @updateURL    https://raw.githubusercontent.com/airborne-commando/tapermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
 // @downloadURL  https://raw.githubusercontent.com/airborne-commando/tapermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
-// @version      2.2.3
+// @version      2.2.4
 // @description  Export results from multiple background check sites: FastBackgroundCheck, FastPeopleSearch, ZabaSearch, and Vote.org with API integration
 // @author       airborne-commando
 // @match        https://www.fastbackgroundcheck.com/*
@@ -2036,19 +2036,13 @@ createUI() {
         'vote.org': 'Vote.org'
     };
     title.textContent = `Universal Exporter v2.2.0 - ${siteNames[this.site] || this.site}`;
-    title.style.cssText = 'margin: 0; color: #2c3e50; font-size: 16px;';
-
-    const branding = document.createElement('div');
-    branding.innerHTML = '<strong style="color: #e74c3c; font-size: 12px;">Which way OSINT man?</strong>';
-    branding.style.cssText = 'text-align: right; font-style: italic;';
-
+    title.style.cssText = 'margin: 0; margin-left: 100px; color: #2c3e50; font-size: 16px;';
     titleRow.appendChild(title);
-    titleRow.appendChild(branding);
     header.appendChild(titleRow);
 
     // Quick navigation links
     const navLinks = document.createElement('div');
-    navLinks.style.cssText = 'display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; font-size: 11px;';
+    navLinks.style.cssText = 'display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; margin-left: 50px; font-size: 11px;';
     navLinks.innerHTML = `
         <a href="https://www.fastbackgroundcheck.com" target="_blank" style="color: #3498db; text-decoration: none; padding: 3px 6px; border: 1px solid #3498db; border-radius: 3px;">FastBackgroundCheck</a>
         <a href="https://www.fastpeoplesearch.com" target="_blank" style="color: #27ae60; text-decoration: none; padding: 3px 6px; border: 1px solid #27ae60; border-radius: 3px;">FastPeopleSearch</a>
@@ -2159,7 +2153,7 @@ createUI() {
         <div style="font-weight: bold; margin-bottom: 8px; color: #856404;">🗺️ Quick Maps:</div>
         <div style="margin-bottom: 8px;">
             <input type="text" id="ubcQuickMaps" placeholder="Enter address for maps..."
-                   style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px; margin-bottom: 8px;">
+                   style="width: 70%; padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px; margin-bottom: 8px;">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                 <button id="ubcGoogleMapsBtn" style="background: #4285f4; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 11px;">
                     Google Maps
@@ -2219,9 +2213,6 @@ createUI() {
             <a href="https://www.fastpeoplesearch.com" target="_blank" style="color: #27ae60; margin: 0 5px;">FPS</a> •
             <a href="https://www.zabasearch.com" target="_blank" style="color: #f39c12; margin: 0 5px;">Zaba</a> •
             <a href="https://verify.vote.org/" target="_blank" style="color: #9b59b6; margin: 0 5px;">Vote</a>
-        </div>
-        <div style="font-style: italic; color: #e74c3c;">
-            Which way OSINT man? Choose your path...
         </div>
     `;
 
