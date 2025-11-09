@@ -2280,7 +2280,7 @@ createUI() {
         const geocodeBtn = document.getElementById('ubcGeocodeBtn');
         const streetViewBtn = document.getElementById('ubcStreetViewBtn');
         const mapsAddressInput = document.getElementById('ubcMapsAddress');
-        
+
         if (geocodeBtn) {
             geocodeBtn.onclick = () => this.showMapForAddress();
         }
