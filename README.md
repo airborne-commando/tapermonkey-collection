@@ -253,3 +253,26 @@ Make the GUI look more clean perhaps?
 <img width="698" height="928" alt="image" src="./examples/505826377-e0bf9f98-0f82-4db5-ad99-daeea82103ec.png" />
 
 <img width="704" height="756" alt="image" src="./examples/505825464-90de10f9-a0b6-491f-a8a8-75323a4d04df.png" />
+
+-----
+
+# 4chan archive
+
+This user script automatically replaces broken or missing Imgur images on **4chanarchives.com** with archived versions from the **Wayback Machine**.  
+
+***
+
+Here’s what it does in short:
+
+- Scans all **Imgur image links** and embedded **thumbnails** on the page.  
+- Uses multiple **Wayback Machine APIs** (CDX, direct, and standard) to locate existing archived snapshots of those images.  
+- If a backup is found, it redirects the link or image to the archived version.  
+- Visually marks each link with color-coded borders:
+  - Green for success (snapshot found)  
+  - Yellow for missing (no snapshot found)  
+  - Red for errors  
+- Saves results in a **local cache** to avoid rechecking the same URLs.  
+- Adds a **menu option** in Tampermonkey to clear the cache and re-scan the page.  
+- Handles dynamically loaded content and URL changes by reprocessing automatically.
+
+Essentially, it ensures that old threads with dead Imgur links on 4chanarchives.com still display usable images when archived copies exist.
