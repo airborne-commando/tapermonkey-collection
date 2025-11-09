@@ -258,6 +258,8 @@ Make the GUI look more clean perhaps?
 
 # 4chan archive
 
+[waybackmachineimgrdr.js](./SCRIPTS/waybackmachineimgrdr.js)
+
 This user script automatically replaces broken or missing Imgur images on **4chanarchives.com** with archived versions from the **Wayback Machine**.  
 
 ***
