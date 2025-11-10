@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Universal Background Check Exporter
 // @namespace    http://tampermonkey.net/
-// @updateURL    https://raw.githubusercontent.com/airborne-commando/tapermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
-// @downloadURL  https://raw.githubusercontent.com/airborne-commando/tapermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
-// @version      2.2.4
+// @updateURL    https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
+// @downloadURL  https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
+// @version      2.2.5
 // @description  Export results from multiple background check sites: FastBackgroundCheck, FastPeopleSearch, ZabaSearch, and Vote.org with API integration
 // @author       airborne-commando
 // @match        https://www.fastbackgroundcheck.com/*

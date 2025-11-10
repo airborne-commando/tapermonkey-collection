@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Wayback Machine - Imgur Image Redirector
 // @namespace    http://tampermonkey.net/
-// @updateURL    https://raw.githubusercontent.com/airborne-commando/tapermonkey-collection/refs/heads/main/SCRIPTS/waybackmachineimgrdr.js
-// @downloadURL  https://raw.githubusercontent.com/airborne-commando/tapermonkey-collection/refs/heads/main/SCRIPTS/waybackmachineimgrdr.js
-// @version      1.8
+// @updateURL    https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/waybackmachineimgrdr.js
+// @downloadURL  https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/waybackmachineimgrdr.js
+// @version      1.9
 // @description  Redirect Imgur images to existing Wayback Machine snapshots
 // @author       airborne-commando
 // @match        https://4chanarchives.com/*
