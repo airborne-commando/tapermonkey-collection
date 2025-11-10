@@ -211,7 +211,7 @@ Use this when dealing with a CAPTCHA, how would you know? if the error sign isn'
 
 Search breach data and analyze Reddit users
 
-[Breachvip&reddit.js](./SCRIPTS/Breachvip&reddit.js)
+[Breachvip-reddit.js](./SCRIPTS/Breachvip-reddit.js)
 
 ## Breach data search
 
