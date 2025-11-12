@@ -287,4 +287,4 @@ Essentially, it ensures that old threads with dead Imgur links on 4chanarchives.
 
 Basically just extracts links on a webpage, use this with archive.ph or wayback machine.
 
-Hitting clear will clear everything, even what's in memory.
+Hitting clear will clear everything, even what's in memory. Will not clear downloads.
