@@ -278,3 +278,11 @@ Here’s what it does in short:
 - Handles dynamically loaded content and URL changes by reprocessing automatically.
 
 Essentially, it ensures that old threads with dead Imgur links on 4chanarchives.com still display usable images when archived copies exist.
+
+---
+
+# Link extractor
+
+[linkextractor.js](./SCRIPTS/linkextractor.js)
+
+Basically just extracts links on a webpage, use this with archive.ph or wayback machine.
