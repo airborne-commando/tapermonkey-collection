@@ -1,96 +1,35 @@
 // ==UserScript==
 // @name         Universal Background Check Exporter
 // @namespace    http://tampermonkey.net/
-// @version      2.2.6
-// @description  Export results from multiple background check sites: FastBackgroundCheck, FastPeopleSearch, ZabaSearch, and Vote.org with API integration (Greasemonkey & Mobile Compatible)
+// @updateURL    https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
+// @downloadURL  https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
+// @version      2.2.5
+// @description  Export results from multiple background check sites: FastBackgroundCheck, FastPeopleSearch, ZabaSearch, and Vote.org with API integration
 // @author       airborne-commando
-// @match        *://*.fastbackgroundcheck.com/*
-// @match        *://*.fastpeoplesearch.com/*
-// @match        *://*.zabasearch.com/*
-// @match        *://verify.vote.org/*
-// @match        *://verify.vote.org/your-status
-// @grant        GM.xmlHttpRequest
-// @grant        GM.getValue
-// @grant        GM.setValue
-// @grant        GM.deleteValue
-// @grant        GM.download
+// @match        https://www.fastbackgroundcheck.com/*
+// @match        https://fastbackgroundcheck.com/*
+// @match        https://www.fastpeoplesearch.com/*
+// @match        https://www.zabasearch.com/*
+// @match        https://verify.vote.org/your-status
+// @match        https://verify.vote.org/
+// @grant        GM_download
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @grant        GM_deleteValue
+// @grant        GM_xmlhttpRequest
 // @connect      verify.vote.org
 // @connect      vote.org
 // @connect      maps.googleapis.com
-// @run-at       document-end
 // @license      GPL 3.0
 // ==/UserScript==
 
 (function() {
     'use strict';
 
-    // GM API Compatibility Layer
-    const GMApi = (() => {
-        if (typeof GM !== "undefined" && GM.xmlHttpRequest) {
-            // Greasemonkey 4+ style APIs (promise-based)
-            return {
-                xmlHttpRequest: (details) => GM.xmlHttpRequest(details),
-                getValue: (key, defaultVal) => GM.getValue(key, defaultVal),
-                setValue: (key, val) => GM.setValue(key, val),
-                deleteValue: (key) => GM.deleteValue(key),
-                download: (details) => GM.download(details),
-            };
-        } else if (typeof GM_xmlhttpRequest !== "undefined") {
-            // Tampermonkey/Greasemonkey 3 style APIs (callback-based)
-            return {
-                xmlHttpRequest: (details) => GM_xmlhttpRequest(details),
-                getValue: (key, defaultVal) => new Promise(resolve => {
-                    const value = GM_getValue(key, defaultVal);
-                    resolve(value);
-                }),
-                setValue: (key, val) => new Promise(resolve => {
-                    GM_setValue(key, val);
-                    resolve();
-                }),
-                deleteValue: (key) => new Promise(resolve => {
-                    GM_deleteValue(key);
-                    resolve();
-                }),
-                download: (details) => GM_download(details),
-            };
-        } else {
-            // Fallback for testing
-            console.warn("GM APIs not found - running in limited mode");
-            return {
-                xmlHttpRequest: (details) => {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open(details.method, details.url, true);
-                    if (details.headers) {
-                        Object.keys(details.headers).forEach(key => {
-                            xhr.setRequestHeader(key, details.headers[key]);
-                        });
-                    }
-                    xhr.onload = () => details.onload(xhr);
-                    xhr.onerror = () => details.onerror(xhr);
-                    xhr.send(details.data);
-                },
-                getValue: (key, defaultVal) => Promise.resolve(localStorage.getItem(key) || defaultVal),
-                setValue: (key, val) => Promise.resolve(localStorage.setItem(key, val)),
-                deleteValue: (key) => Promise.resolve(localStorage.removeItem(key)),
-                download: (details) => {
-                    const link = document.createElement('a');
-                    link.href = details.url;
-                    link.download = details.name;
-                    link.click();
-                },
-            };
-        }
-    })();
-
-    // Mobile detection and UI adaptation
-    const isMobile = () => {
-        return window.innerWidth <= 768 || 
-               /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    };
-
     // Search Utility Class
     class SearchUtility {
         static formatNameForFPSFBC(name) {
+            // For FPS and FBC: replace spaces with hyphens but keep existing hyphens
             return name.toLowerCase()
                 .trim()
                 .replace(/\s+/g, '-')
@@ -99,6 +38,7 @@
         }
 
         static formatNameForZaba(name) {
+            // For Zaba: keep hyphens and spaces become hyphens
             return name.toLowerCase()
                 .trim()
                 .replace(/\s+/g, '-')
@@ -107,6 +47,7 @@
         }
 
         static formatLocation(location) {
+            // Format location for URL
             return location.toLowerCase()
                 .trim()
                 .replace(/\s*,\s*/g, '-')
@@ -117,6 +58,7 @@
         }
 
         static formatStateForZaba(state) {
+            // Zaba uses full state names, not abbreviations
             const stateMap = {
                 'al': 'alabama', 'ak': 'alaska', 'az': 'arizona', 'ar': 'arkansas', 'ca': 'california',
                 'co': 'colorado', 'ct': 'connecticut', 'de': 'delaware', 'fl': 'florida', 'ga': 'georgia',
@@ -152,12 +94,14 @@
             if (formattedCityState) {
                 urls.fastpeoplesearch.push(`https://www.fastpeoplesearch.com/name/${formattedNameFPSFBC}_${formattedCityState}`);
             }
+            // Always include state-only search for FPS
             urls.fastpeoplesearch.push(`https://www.fastpeoplesearch.com/name/${formattedNameFPSFBC}_${formattedState}`);
 
             // FastBackgroundCheck URLs
             if (formattedCityState) {
                 urls.fastbackgroundcheck.push(`https://www.fastbackgroundcheck.com/people/${formattedNameFPSFBC}/${formattedCityState}`);
             }
+            // Always include state-only search for FBC
             urls.fastbackgroundcheck.push(`https://www.fastbackgroundcheck.com/people/${formattedNameFPSFBC}/${formattedState}`);
 
             // ZabaSearch URLs
@@ -165,6 +109,7 @@
                 const formattedCity = this.formatLocation(city);
                 urls.zabasearch.push(`https://www.zabasearch.com/people/${formattedNameZaba}/${formattedStateZaba}/${formattedCity}/`);
             }
+            // Always include state-only search for Zaba
             urls.zabasearch.push(`https://www.zabasearch.com/people/${formattedNameZaba}/${formattedStateZaba}/`);
 
             return urls;
@@ -177,59 +122,104 @@
         static validateState(state) {
             return state && state.trim().length > 0;
         }
+
+        static getStateAbbreviation(stateName) {
+            const stateMap = {
+                'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR', 'california': 'CA',
+                'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE', 'florida': 'FL', 'georgia': 'GA',
+                'hawaii': 'HI', 'idaho': 'ID', 'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA',
+                'kansas': 'KS', 'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+                'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS', 'missouri': 'MO',
+                'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV', 'new hampshire': 'NH', 'new jersey': 'NJ',
+                'new mexico': 'NM', 'new york': 'NY', 'north carolina': 'NC', 'north dakota': 'ND', 'ohio': 'OH',
+                'oklahoma': 'OK', 'oregon': 'OR', 'pennsylvania': 'PA', 'rhode island': 'RI', 'south carolina': 'SC',
+                'south dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT', 'vermont': 'VT',
+                'virginia': 'VA', 'washington': 'WA', 'west virginia': 'WV', 'wisconsin': 'WI', 'wyoming': 'WY'
+            };
+
+            const normalized = stateName.toLowerCase().trim();
+            return stateMap[normalized] || null;
+        }
     }
 
     // Google Maps Utility Class
     class MapsUtility {
-        static async geocodeAddress(address) {
-            return new Promise((resolve, reject) => {
-                const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=AIzaSyC1lwGqZqQ1qQ1qQ1qQ1qQ1qQ1qQ1qQ1qQ1`;
+    static async geocodeAddress(address) {
+        return new Promise((resolve, reject) => {
+            // Simple geocoding using Google Maps API
+            const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=AIzaSyC1lwGqZqQ1qQ1qQ1qQ1qQ1qQ1qQ1qQ1qQ1`;
 
-                GMApi.xmlHttpRequest({
-                    method: "GET",
-                    url: url,
-                    onload: function(response) {
-                        if (response.status === 200) {
-                            const data = JSON.parse(response.responseText);
-                            if (data.status === 'OK' && data.results.length > 0) {
-                                const location = data.results[0].geometry.location;
-                                resolve({
-                                    success: true,
-                                    lat: location.lat,
-                                    lng: location.lng,
-                                    formattedAddress: data.results[0].formatted_address
-                                });
-                            } else {
-                                resolve({
-                                    success: false,
-                                    error: data.status
-                                });
-                            }
+            GM_xmlhttpRequest({
+                method: "GET",
+                url: url,
+                onload: function(response) {
+                    if (response.status === 200) {
+                        const data = JSON.parse(response.responseText);
+                        if (data.status === 'OK' && data.results.length > 0) {
+                            const location = data.results[0].geometry.location;
+                            resolve({
+                                success: true,
+                                lat: location.lat,
+                                lng: location.lng,
+                                formattedAddress: data.results[0].formatted_address
+                            });
                         } else {
                             resolve({
                                 success: false,
-                                error: `HTTP ${response.status}`
+                                error: data.status
                             });
                         }
-                    },
-                    onerror: function(error) {
+                    } else {
                         resolve({
                             success: false,
-                            error: 'Geocoding request failed'
+                            error: `HTTP ${response.status}`
                         });
                     }
-                });
+                },
+                onerror: function(error) {
+                    resolve({
+                        success: false,
+                        error: 'Geocoding request failed'
+                    });
+                }
             });
-        }
-
-        static generateGoogleMapsLink(lat, lng) {
-            return `https://www.google.com/maps?q=${lat},${lng}`;
-        }
-
-        static generateStreetViewUrl(lat, lng) {
-            return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
-        }
+        });
     }
+
+    static generateStaticMapUrl(lat, lng, zoom = 14, width = 300, height = 200) {
+        return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=${width}x${height}&markers=color:red%7C${lat},${lng}&key=AIzaSyC1lwGqZqQ1qQ1qQ1qQ1qQ1qQ1qQ1qQ1qQ1`;
+    }
+
+    static generateGoogleMapsLink(lat, lng) {
+        return `https://www.google.com/maps?q=${lat},${lng}`;
+    }
+
+    static generateStreetViewUrl(lat, lng) {
+        return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+    }
+
+    static parseAddressComponents(address) {
+        // Simple address parsing for common formats
+        const patterns = [
+            /(\d+)\s+([^,]+),\s*([^,]+),\s*([A-Z]{2})\s*(\d{5})/i, // 123 Main St, City, ST 12345
+            /([^,]+),\s*([^,]+),\s*([A-Z]{2})/i, // City, ST
+            /([^,]+),\s*([A-Z]{2})/i // City, ST
+        ];
+
+        for (const pattern of patterns) {
+            const match = address.match(pattern);
+            if (match) {
+                return {
+                    street: match[1] || '',
+                    city: match[2] || '',
+                    state: match[3] || '',
+                    zip: match[4] || ''
+                };
+            }
+        }
+        return null;
+    }
+}
 
     // Vote.org API Integration Class
     class VoteOrgAPI {
@@ -237,6 +227,7 @@
             return new Promise((resolve, reject) => {
                 const url = 'https://verify.vote.org/your-status';
 
+                // Default values
                 const data = {
                     first_name: voterData.firstName || '',
                     last_name: voterData.lastName || '',
@@ -252,11 +243,12 @@
                     agreed_to_terms: '1'
                 };
 
+                // Build form data
                 const formData = Object.keys(data)
                     .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(data[key])}`)
                     .join('&');
 
-                GMApi.xmlHttpRequest({
+                GM_xmlhttpRequest({
                     method: "POST",
                     url: url,
                     headers: {
@@ -315,6 +307,7 @@
             const hasGreenCheck = doc.querySelector('.green-check') !== null;
             const hasRegisteredText = doc.querySelector('h2')?.textContent.includes('You are registered to vote');
 
+            // Check for positive confirmation in the main content
             const bodyText = doc.body.textContent;
             const hasPositiveConfirmation = bodyText.includes('is registered to vote at') &&
                                            !bodyText.includes('could not confirm') &&
@@ -333,6 +326,7 @@
                 result.isRegistered = true;
                 result.registrationStatus = 'Registered to Vote';
 
+                // Extract voter details
                 const nameElement = doc.querySelector('.address-block b');
                 if (nameElement) {
                     result.fullName = nameElement.textContent.trim();
@@ -347,6 +341,7 @@
                 result.isRegistered = false;
                 result.registrationStatus = 'Not Registered - Could Not Confirm';
 
+                // Extract name from the address block
                 const nameElement = doc.querySelector('.address-block b');
                 if (nameElement) {
                     result.fullName = nameElement.textContent.trim();
@@ -387,10 +382,12 @@
         extractData() {
             const data = super.extractData();
 
+            // Check if this is a search results page with person containers
             if (document.querySelector('.person-container, [class*="person"]')) {
                 data.results = this.extractSearchResultsData();
                 data.pageType = 'search_results';
             }
+            // Check for individual person details page
             else if (document.querySelector('.person-details, .profile-container')) {
                 const personData = this.extractPersonDetailsData();
                 if (personData) {
@@ -398,6 +395,7 @@
                 }
                 data.pageType = 'person_details';
             }
+            // Check for no results
             else if (document.querySelector('.no-results, .no-records, .not-found')) {
                 data.results = [{ status: 'no_results', message: 'No records found matching search criteria' }];
                 data.pageType = 'no_results';
@@ -623,11 +621,13 @@
         extractData() {
             const data = super.extractData();
 
+            // Check if this is a people list page
             if (document.querySelector('.people-list')) {
                 const peopleList = document.querySelector('.people-list');
                 data.results = this.extractPeopleListData(peopleList);
                 data.pageType = 'people_list';
             }
+            // Check for individual person details page
             else if (document.querySelector('.card-details')) {
                 const personCards = document.querySelectorAll('.card-details');
                 personCards.forEach((card, index) => {
@@ -638,6 +638,7 @@
                 });
                 data.pageType = 'person_details';
             }
+            // Check for no results
             else if (document.querySelector('.no-results')) {
                 data.results = [{ status: 'no_results', message: 'No people found matching search criteria' }];
                 data.pageType = 'no_results';
@@ -903,10 +904,12 @@
             const data = super.extractData();
             this.extractLocationInfo(data);
 
+            // Check if this is a search results page with multiple people
             if (this.isSearchResultsPage()) {
                 data.results = this.extractSearchResultsData();
                 data.pageType = 'search_results';
             }
+            // Check for individual person details page
             else if (this.isPersonDetailsPage()) {
                 const personData = this.extractPersonDetailsData();
                 if (personData) {
@@ -914,6 +917,7 @@
                 }
                 data.pageType = 'person_details';
             }
+            // Check for no results
             else if (this.isNoResultsPage()) {
                 data.results = [{ status: 'no_results', message: 'No records found matching search criteria' }];
                 data.pageType = 'no_results';
@@ -1284,18 +1288,22 @@
         extractData() {
             const data = super.extractData();
 
+            // Check for registered voter page FIRST (most specific)
             if (this.isRegisteredVoterPage()) {
                 data.results = this.extractVoterRegistrationData();
                 data.pageType = 'voter_registration_results';
             }
+            // Check for no registration found
             else if (this.isNoRegistrationPage()) {
                 data.results = this.extractNoRegistrationData();
                 data.pageType = 'no_registration';
             }
+            // Check if this is the search form page
             else if (this.isSearchFormPage()) {
                 data.results = [{ status: 'search_form', message: 'Voter registration search form' }];
                 data.pageType = 'search_form';
             }
+            // Fallback: check page content for registration status
             else {
                 data.results = this.extractFromPageContent();
                 if (data.results.length > 0) {
@@ -1313,34 +1321,40 @@
                 return false;
             }
 
+            // Use provided data or generate sample data
             const fillData = data || this.generateSampleData();
+
             let filledFields = 0;
 
-            // Fill form fields
+            // Fill first name
             const firstNameInput = form.querySelector('input[name="first_name"]');
             if (firstNameInput && fillData.firstName) {
                 firstNameInput.value = fillData.firstName;
                 filledFields++;
             }
 
+            // Fill last name
             const lastNameInput = form.querySelector('input[name="last_name"]');
             if (lastNameInput && fillData.lastName) {
                 lastNameInput.value = fillData.lastName;
                 filledFields++;
             }
 
+            // Fill street address
             const streetInput = form.querySelector('input[name="street_address"]');
             if (streetInput && fillData.streetAddress) {
                 streetInput.value = fillData.streetAddress;
                 filledFields++;
             }
 
+            // Fill city
             const cityInput = form.querySelector('input[name="city"]');
             if (cityInput && fillData.city) {
                 cityInput.value = fillData.city;
                 filledFields++;
             }
 
+            // Fill state (dropdown)
             const stateSelect = form.querySelector('select[name="state_abbr"]');
             if (stateSelect && fillData.state) {
                 const option = Array.from(stateSelect.options).find(opt =>
@@ -1352,25 +1366,30 @@
                 }
             }
 
+            // Fill ZIP code
             const zipInput = form.querySelector('input[name="zip_5"]');
             if (zipInput && fillData.zipCode) {
                 zipInput.value = fillData.zipCode;
                 filledFields++;
             }
 
+            // Fill email (hidden - use default)
             const emailInput = form.querySelector('input[name="email"]');
             if (emailInput) {
                 emailInput.value = 'tahis60368@haotuwu.com';
                 filledFields++;
             }
 
+            // Fill date of birth (01/01/ with user year)
             const dobMonth = form.querySelector('select[name="date_of_birth_month"]');
             const dobDay = form.querySelector('select[name="date_of_birth_day"]');
             const dobYear = form.querySelector('select[name="date_of_birth_year"]');
             if (dobMonth && dobDay && dobYear) {
+                // Always set to 01/01/
                 dobMonth.value = '1';
                 dobDay.value = '1';
 
+                // Use provided year or current year - 30 as default
                 if (fillData.dobYear) {
                     dobYear.value = fillData.dobYear;
                 } else {
@@ -1380,12 +1399,14 @@
                 filledFields += 3;
             }
 
+            // Fill phone number (optional)
             const phoneInput = form.querySelector('input[name="phone_number"]');
             if (phoneInput && fillData.phone) {
                 phoneInput.value = fillData.phone;
                 filledFields++;
             }
 
+            // Check the terms agreement checkbox
             const termsCheckbox = form.querySelector('input[name="agreed_to_terms"]');
             if (termsCheckbox) {
                 termsCheckbox.checked = true;
@@ -1396,7 +1417,9 @@
             return filledFields > 0;
         }
 
+        // Add this method to generate sample data
         generateSampleData() {
+            // Sample data for testing
             const sampleData = {
                 firstName: 'John',
                 lastName: 'Smith',
@@ -1408,18 +1431,21 @@
                 phone: '(555) 123-4567'
             };
 
+            // Try to get previously used data from storage
             try {
-                const previousData = GMApi.getValue('vote_org_previous_data', null);
+                const previousData = GM_getValue('vote_org_previous_data', null);
                 if (previousData) {
                     return previousData;
                 }
             } catch (error) {
+                // Fall back to sample data if storage fails
                 console.log('Universal Exporter: Error loading saved data, using sample data');
             }
 
             return sampleData;
         }
 
+        // Update the extractFormData method to match the form structure
         extractFormData() {
             const form = document.querySelector('form#verification_form');
             if (!form) return null;
@@ -1464,17 +1490,19 @@
 
         saveFormData(formData) {
             try {
-                GMApi.setValue('vote_org_previous_data', formData);
+                GM_setValue('vote_org_previous_data', formData);
             } catch (error) {
                 console.log('Universal Exporter: Error saving form data');
             }
         }
 
         isRegisteredVoterPage() {
+            // Check for explicit registered voter indicators
             const hasRegisteredClass = document.querySelector('.registered-lead') !== null;
             const hasGreenCheck = document.querySelector('.green-check') !== null;
             const hasRegisteredText = document.querySelector('h2')?.textContent.includes('You are registered to vote');
 
+            // Check for positive confirmation in the main content
             const bodyText = document.body.textContent;
             const hasPositiveConfirmation = bodyText.includes('is registered to vote at') &&
                                            !bodyText.includes('could not confirm') &&
@@ -1484,15 +1512,18 @@
         }
 
         isNoRegistrationPage() {
+            // Check for explicit "not registered" indicators
             const hasNotRegisteredClass = document.querySelector('.not-registered') !== null;
             const hasNotRegisteredLead = document.querySelector('.not-registered-lead') !== null;
             const hasRedCross = document.querySelector('.red-cross') !== null;
 
+            // Check page content for negative indicators
             const bodyText = document.body.textContent;
             const hasNegativeIndicators = bodyText.includes('We could not confirm that you are registered to vote') ||
                                          bodyText.includes('Our records do NOT show that') ||
                                          bodyText.includes('is not registered to vote at');
 
+            // Check for the specific "could not confirm" text in headings
             const headings = document.querySelectorAll('h1, h2, h3');
             let hasNegativeHeading = false;
             headings.forEach(heading => {
@@ -1516,7 +1547,9 @@
             const bodyText = document.body.textContent;
             const results = [];
 
+            // Try to extract registration status from page content
             if (bodyText.includes('is registered to vote at') && !bodyText.includes('could not confirm')) {
+                // This appears to be a registered voter
                 const voter = {
                     type: 'voter_registration',
                     status: 'found',
@@ -1527,6 +1560,7 @@
                 results.push(voter);
             }
             else if (bodyText.includes('could not confirm') || bodyText.includes('do NOT show')) {
+                // This appears to be not registered
                 const voter = {
                     type: 'voter_registration',
                     status: 'not_found',
@@ -1541,14 +1575,17 @@
         }
 
         extractVoterDetailsFromContent(voter) {
+            // Extract name from bold elements
             const boldElements = document.querySelectorAll('b');
             boldElements.forEach(element => {
                 const text = element.textContent.trim();
+                // Look for name (typically appears in address blocks)
                 if (text && text.length > 5 && text.length < 50 && !text.match(/^\d/)) {
                     voter.fullName = text;
                 }
             });
 
+            // Extract address from elements with address-related classes or content
             const addressSelectors = ['.ldv-address b', '.address-block b', '[class*="address"] b'];
             addressSelectors.forEach(selector => {
                 const addressElement = document.querySelector(selector);
@@ -1558,6 +1595,7 @@
                 }
             });
 
+            // Fallback: look for address patterns in the text
             if (!voter.registrationAddress) {
                 const addressMatch = document.body.textContent.match(/\d+\s+[\w\s]+,\s*[\w\s]+,\s*[A-Z]{2}\s*\d{5}/);
                 if (addressMatch) {
@@ -1575,22 +1613,26 @@
                 registrationStatus: 'Registered to Vote'
             };
 
+            // Extract registration status
             const statusElement = document.querySelector('.registered-lead');
             if (statusElement) {
                 voter.registrationStatus = statusElement.textContent.trim();
             }
 
+            // Extract voter name
             const nameElement = document.querySelector('.address-block b');
             if (nameElement) {
                 voter.fullName = nameElement.textContent.trim();
             }
 
+            // Extract address
             const addressElement = document.querySelector('.ldv-address b');
             if (addressElement) {
                 voter.registrationAddress = addressElement.textContent.trim();
                 this.parseAddressComponents(voter);
             }
 
+            // Extract additional voter information if available
             this.extractAdditionalVoterInfo(voter);
 
             return [voter];
@@ -1604,6 +1646,7 @@
                 registrationStatus: 'Not Registered - Could Not Confirm'
             };
 
+            // Extract the main message
             const notRegisteredLead = document.querySelector('.not-registered-lead');
             if (notRegisteredLead) {
                 voter.message = notRegisteredLead.textContent.trim();
@@ -1617,17 +1660,20 @@
                 });
             }
 
+            // Extract name from the address block
             const nameElement = document.querySelector('.address-block b');
             if (nameElement) {
                 voter.fullName = nameElement.textContent.trim();
             }
 
+            // Extract address
             const addressElement = document.querySelector('.ldv-address b');
             if (addressElement) {
                 voter.registrationAddress = addressElement.textContent.trim();
                 this.parseAddressComponents(voter);
             }
 
+            // Extract reasons or additional information
             const reasons = [];
             const listItems = document.querySelectorAll('li');
             listItems.forEach(li => {
@@ -1641,11 +1687,13 @@
                 voter.possibleReasons = reasons;
             }
 
+            // Extract recommendation text
             const bodyText = document.body.textContent;
             if (bodyText.includes('double check with your state') || bodyText.includes('click through to the next page')) {
                 voter.recommendation = 'Double check with your state election office';
             }
 
+            // Extract hidden form data if available
             this.extractFormData(voter);
 
             return [voter];
@@ -1659,11 +1707,12 @@
                 voter.streetAddress = addressParts[0].trim();
                 voter.cityStateZip = addressParts.slice(1).join(',').trim();
 
+                // Further parse city, state, zip
                 const cityStateZipMatch = voter.cityStateZip.match(/([^,]+),\s*([A-Z]{2})\s*(\d{5}(?:-\d{4})?\.?)/);
                 if (cityStateZipMatch) {
                     voter.city = cityStateZipMatch[1].trim();
                     voter.state = cityStateZipMatch[2].trim();
-                    voter.zipCode = cityStateZipMatch[3].replace(/\.$/, '').trim();
+                    voter.zipCode = cityStateZipMatch[3].replace(/\.$/, '').trim(); // Remove trailing period
                 }
             }
         }
@@ -1673,19 +1722,23 @@
             additionalInfoElements.forEach(element => {
                 const text = element.textContent.trim();
 
+                // Look for polling place information
                 if (text.toLowerCase().includes('polling place') || text.toLowerCase().includes('precinct')) {
                     voter.pollingPlace = text;
                 }
 
+                // Look for election district information
                 if (text.toLowerCase().includes('district') || text.toLowerCase().includes('ward')) {
                     voter.district = text;
                 }
 
+                // Look for registration date
                 if (text.toLowerCase().includes('registered') && text.toLowerCase().includes('date')) {
                     voter.registrationDate = text.replace(/.*registered\s*:\s*/i, '').trim();
                 }
             });
 
+            // Extract any timestamp or last update information
             const timestampElements = document.querySelectorAll('small, .timestamp, .last-updated');
             timestampElements.forEach(element => {
                 const text = element.textContent.trim();
@@ -1805,6 +1858,7 @@
         extractData() {
             const data = super.extractData();
 
+            // Try to extract any person-like data
             const potentialPeople = document.querySelectorAll('[class*="person"], [class*="result"], [class*="card"]');
             if (potentialPeople.length > 0) {
                 data.results = this.extractGenericData(potentialPeople);
@@ -1825,6 +1879,7 @@
                     rawText: element.textContent.trim().substring(0, 200) + '...'
                 };
 
+                // Try to find name-like text (usually in headings)
                 const headings = element.querySelectorAll('h1, h2, h3, h4, h5, h6, strong, b');
                 headings.forEach(heading => {
                     const text = heading.textContent.trim();
@@ -1846,7 +1901,7 @@
     class UniversalBackgroundCheckExporter {
         constructor() {
             this.site = this.detectSite();
-            this.isMobile = isMobile();
+            this.isMobile = this.detectMobile();
             this.currentPageData = null;
             this.siteExtractor = null;
             this.init();
@@ -1868,6 +1923,19 @@
                 }
             });
         }
+
+        showStreetView() {
+            if (!this.currentCoords) {
+                const resultsDiv = document.getElementById('ubcMapsResults');
+                resultsDiv.innerHTML = '<div style="color: #e74c3c;">Please geocode an address first</div>';
+                return;
+            }
+
+            const streetViewUrl = MapsUtility.generateStreetViewUrl(this.currentCoords.lat, this.currentCoords.lng);
+            window.open(streetViewUrl, '_blank');
+        }
+
+
 
         initializeSiteExtractor() {
             switch (this.site) {
@@ -1897,317 +1965,341 @@
             return 'unknown';
         }
 
-        createUI() {
-            // Remove existing UI if present
-            const existingUI = document.getElementById('ubc-exporter-ui');
-            if (existingUI) {
-                existingUI.remove();
-            }
-
-            // Create main container with mobile-optimized styling
-            const container = document.createElement('div');
-            container.id = 'ubc-exporter-ui';
-
-            if (this.isMobile) {
-                container.style.cssText = `
-                    position: fixed;
-                    top: 10px;
-                    left: 10px;
-                    right: 10px;
-                    background: white;
-                    border: 2px solid #333;
-                    border-radius: 8px;
-                    padding: 15px;
-                    z-index: 10000;
-                    font-family: Arial, sans-serif;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                    font-size: 14px;
-                    max-height: 80vh;
-                    overflow-y: auto;
-                    touch-action: pan-y;
-                `;
-            } else {
-                container.style.cssText = `
-                    position: fixed;
-                    top: 100px;
-                    right: 20px;
-                    width: 500px;
-                    background: white;
-                    border: 2px solid #333;
-                    border-radius: 8px;
-                    padding: 15px;
-                    z-index: 10000;
-                    font-family: Arial, sans-serif;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                    max-height: 80vh;
-                    overflow-y: auto;
-                `;
-            }
-
-            // Header
-            const header = document.createElement('div');
-            header.style.cssText = 'border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 15px;';
-
-            const titleRow = document.createElement('div');
-            titleRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;';
-
-            const title = document.createElement('h3');
-            const siteNames = {
-                'fastbackgroundcheck': 'FastBackgroundCheck',
-                'fastpeoplesearch': 'FastPeopleSearch',
-                'zabasearch': 'ZabaSearch',
-                'vote.org': 'Vote.org'
-            };
-            title.textContent = `Universal Exporter v2.2.6 - ${siteNames[this.site] || this.site}`;
-            title.style.cssText = 'margin: 0; margin-left: 100px; color: #2c3e50; font-size: 16px;';
-            titleRow.appendChild(title);
-            header.appendChild(titleRow);
-
-            // Quick navigation links
-            const navLinks = document.createElement('div');
-            navLinks.style.cssText = 'display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; margin-left: 50px; font-size: 11px;';
-            navLinks.innerHTML = `
-                <a href="https://www.fastbackgroundcheck.com" target="_blank" style="color: #3498db; text-decoration: none; padding: 3px 6px; border: 1px solid #3498db; border-radius: 3px;">FastBackgroundCheck</a>
-                <a href="https://www.fastpeoplesearch.com" target="_blank" style="color: #27ae60; text-decoration: none; padding: 3px 6px; border: 1px solid #27ae60; border-radius: 3px;">FastPeopleSearch</a>
-                <a href="https://www.zabasearch.com" target="_blank" style="color: #f39c12; text-decoration: none; padding: 3px 6px; border: 1px solid #f39c12; border-radius: 3px;">ZabaSearch</a>
-                <a href="https://verify.vote.org/" target="_blank" style="color: #9b59b6; text-decoration: none; padding: 3px 6px; border: 1px solid #9b59b6; border-radius: 3px;">Vote.org</a>
-            `;
-            header.appendChild(navLinks);
-
-            // Search Section
-            const searchSection = document.createElement('div');
-            searchSection.style.cssText = 'margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; border: 1px solid #e9ecef;';
-            searchSection.innerHTML = `
-                <div style="font-weight: bold; margin-bottom: 8px; color: #2c3e50;">Quick Search:</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                    <input type="text" id="ubcSearchFirstName" placeholder="First Name *" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                    <input type="text" id="ubcSearchLastName" placeholder="Last Name *" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                    <input type="text" id="ubcSearchCity" placeholder="City (optional)" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                    <input type="text" id="ubcSearchState" placeholder="State *" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                </div>
-                <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
-                    * Required fields. State is required for all searches.
-                </div>
-                <button id="ubcGenerateSearch" style="background: #9b59b6; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-size: 14px; width: 100%; min-height: 44px;">Generate Search Links</button>
-                <div id="ubcSearchResults" style="margin-top: 10px; font-size: 12px; display: none;"></div>
-            `;
-
-            // Vote.org API Section
-            const voteOrgSection = document.createElement('div');
-            voteOrgSection.style.cssText = 'margin-bottom: 15px; padding: 10px; background: #f0e6ff; border-radius: 4px; border: 1px solid #d9c2ff;';
-            voteOrgSection.innerHTML = `
-                <div style="font-weight: bold; margin-bottom: 8px; color: #6b46c1;">Vote.org API Check:</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                    <input type="text" id="ubcVoteFirstName" placeholder="First Name *" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                    <input type="text" id="ubcVoteLastName" placeholder="Last Name *" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                </div>
-                <div style="margin-bottom: 8px;">
-                    <input type="text" id="ubcVoteStreet" placeholder="Street Address *" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; width: 100%;">
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                    <input type="text" id="ubcVoteCity" placeholder="City *" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                    <input type="text" id="ubcVoteState" placeholder="State *" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                    <input type="text" id="ubcVoteZip" placeholder="ZIP Code *" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                    <input type="text" id="ubcVoteYear" placeholder="Birth Year (YYYY) *" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                </div>
-                <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
-                    * Required fields. Date of birth will be set to 01/01/YYYY automatically.
-                </div>
-                <button id="ubcCheckVoter" style="background: #6b46c1; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-size: 14px; width: 100%; min-height: 44px;">Check Voter Status via API</button>
-                <div id="ubcVoteResults" style="margin-top: 10px; font-size: 12px; display: none;"></div>
-            `;
-
-            // Current page info
-            const pageInfo = document.createElement('div');
-            pageInfo.style.cssText = 'margin-bottom: 10px; padding: 8px; background: #e8f4fd; border-radius: 4px; font-size: 14px;';
-
-            const pageType = this.currentPageData.pageType === 'search_results' ? 'Search Results' :
-                           this.currentPageData.pageType === 'person_details' ? 'Person Details' :
-                           this.currentPageData.pageType === 'people_list' ? 'People List' :
-                           this.currentPageData.pageType === 'voter_registration_results' ? 'Voter Registration' :
-                           this.currentPageData.pageType === 'no_registration' ? 'No Registration' :
-                           this.currentPageData.pageType === 'search_form' ? 'Search Form' : 'No Results';
-
-            let locationInfo = '';
-            if (this.currentPageData.searchLocation) {
-                const loc = this.currentPageData.searchLocation;
-                if (loc.state && loc.cityOrCounty) {
-                    locationInfo = `<br><strong>Location:</strong> ${loc.cityOrCounty}, ${loc.state}`;
-                } else if (loc.state) {
-                    locationInfo = `<br><strong>Location:</strong> ${loc.state}`;
-                }
-            }
-
-            pageInfo.innerHTML = `
-                <strong>Site:</strong> ${siteNames[this.site] || this.site}<br>
-                <strong>Page Type:</strong> ${pageType}<br>
-                <strong>Records Found:</strong> ${this.currentPageData.results.length}${locationInfo}<br>
-                <small>${window.location.href}</small>
-            `;
-
-            // Action buttons - mobile optimized
-            const actionButtons = document.createElement('div');
-            if (this.isMobile) {
-                actionButtons.style.cssText = 'margin: 10px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;';
-                actionButtons.innerHTML = `
-                    <button id="ubcSavePageBtn" style="background: #3498db; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; grid-column: 1 / -1; min-height: 44px;">Save Current Page</button>
-                    <button id="ubcExportBtn" style="background: #27ae60; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; min-height: 44px;">Export Data</button>
-                    <button id="ubcViewSavedBtn" style="background: #f39c12; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; min-height: 44px;">View Saved</button>
-                    <button id="ubcAutofillBtn" style="background: #9b59b6; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; min-height: 44px;">Autofill Form</button>
-                    <button id="ubcImportBtn" style="background: #e67e22; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; min-height: 44px;">Import Data</button>
-                    <button id="ubcClearBtn" style="background: #e74c3c; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; min-height: 44px;">Clear Data</button>
-                `;
-            } else {
-                actionButtons.style.cssText = 'margin: 10px 0; display: flex; flex-wrap: wrap; gap: 8px;';
-                actionButtons.innerHTML = `
-                    <button id="ubcSavePageBtn" style="background: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1; min-height: 40px;">Save Page</button>
-                    <button id="ubcExportBtn" style="background: #27ae60; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1; min-height: 40px;">Export</button>
-                    <button id="ubcViewSavedBtn" style="background: #f39c12; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1; min-height: 40px;">View Saved</button>
-                    <button id="ubcAutofillBtn" style="background: #9b59b6; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1; min-height: 40px;">Autofill</button>
-                    <button id="ubcImportBtn" style="background: #e67e22; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1; min-height: 40px;">Import</button>
-                    <button id="ubcClearBtn" style="background: #e74c3c; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1; min-height: 40px;">Clear</button>
-                `;
-            }
-
-            // Quick Maps Section
-            const quickMapsSection = document.createElement('div');
-            quickMapsSection.style.cssText = 'margin-bottom: 15px; padding: 10px; background: #fff3cd; border-radius: 4px; border: 1px solid #ffeaa7;';
-            quickMapsSection.innerHTML = `
-                <div style="font-weight: bold; margin-bottom: 8px; color: #856404;">🗺️ Quick Maps:</div>
-                <div style="margin-bottom: 8px;">
-                    <input type="text" id="ubcQuickMaps" placeholder="Enter address for maps..."
-                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; margin-bottom: 8px;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                        <button id="ubcGoogleMapsBtn" style="background: #4285f4; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 12px; min-height: 44px;">
-                            Google Maps
-                        </button>
-                        <button id="ubcBingMapsBtn" style="background: #008373; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 12px; min-height: 44px;">
-                            Bing Maps
-                        </button>
-                        <button id="ubcOpenstreetMapsBtn" style="background: #7ebc6f; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 12px; min-height: 44px;">
-                            OpenStreetMap
-                        </button>
-                        <button id="ubcOpenEarth" style="background: #4285f4; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 12px; min-height: 44px;">
-                            Google Earth
-                        </button>
-                    </div>
-                </div>
-                <div style="font-size: 12px; color: #666;">
-                    Quick address lookup on all mapping platforms
-                </div>
-            `;
-
-            // Export options
-            const optionsDiv = document.createElement('div');
-            optionsDiv.style.cssText = 'margin: 10px 0;';
-            optionsDiv.innerHTML = `
-                <label style="display: block; margin-bottom: 8px; font-weight: bold; font-size: 14px;">Export Format:</label>
-                <select id="ubcExportFormat" style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                    <option value="json">JSON</option>
-                    <option value="txt">Text</option>
-                </select>
-                <label style="display: block; margin-bottom: 8px; font-weight: bold; font-size: 14px;">Data Scope:</label>
-                <select id="ubcDataScope" style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                    <option value="current">Current Page Only</option>
-                    <option value="all">All Saved Pages</option>
-                    <option value="site_all">All ${siteNames[this.site] || this.site} Pages</option>
-                </select>
-            `;
-
-            // Status display
-            const statusDiv = document.createElement('div');
-            statusDiv.id = 'ubcExporterStatus';
-            statusDiv.style.cssText = 'margin: 10px 0; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 14px;';
-            statusDiv.innerHTML = '<strong>Status:</strong> Ready';
-
-            // Preview area
-            const previewDiv = document.createElement('div');
-            previewDiv.id = 'ubcResultsPreview';
-            previewDiv.style.cssText = `margin-top: 10px; border: 1px solid #ddd; padding: 10px; height: ${this.isMobile ? '150px' : '200px'}; overflow-y: auto; font-size: 12px; background: #f9f9f9; border-radius: 4px;`;
-            previewDiv.innerHTML = '<div>Preview will appear here...</div>';
-
-            // Footer
-            const footer = document.createElement('div');
-            footer.style.cssText = 'margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; font-size: 12px; color: #666; text-align: center;';
-            footer.innerHTML = `
-                <div style="margin-bottom: 5px;">
-                    <strong>Quick Navigation:</strong>
-                    <a href="https://www.fastbackgroundcheck.com" target="_blank" style="color: #3498db; margin: 0 5px;">FBC</a> •
-                    <a href="https://www.fastpeoplesearch.com" target="_blank" style="color: #27ae60; margin: 0 5px;">FPS</a> •
-                    <a href="https://www.zabasearch.com" target="_blank" style="color: #f39c12; margin: 0 5px;">Zaba</a> •
-                    <a href="https://verify.vote.org/" target="_blank" style="color: #9b59b6; margin: 0 5px;">Vote</a>
-                </div>
-            `;
-
-            // Assemble UI
-            container.appendChild(header);
-            container.appendChild(searchSection);
-            container.appendChild(voteOrgSection);
-            container.appendChild(pageInfo);
-            container.appendChild(actionButtons);
-            container.appendChild(quickMapsSection);
-            container.appendChild(optionsDiv);
-            container.appendChild(statusDiv);
-            container.appendChild(previewDiv);
-            container.appendChild(footer);
-
-            document.body.appendChild(container);
-
-            // Add event listeners
-            this.attachEventListeners();
-            this.log(`Universal exporter initialized for ${siteNames[this.site]}`);
-            this.updatePreview();
+        detectMobile() {
+            return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         }
 
-        attachEventListeners() {
-            document.getElementById('ubcSavePageBtn').onclick = () => this.saveCurrentPage();
-            document.getElementById('ubcExportBtn').onclick = () => this.exportData();
-            document.getElementById('ubcViewSavedBtn').onclick = () => this.viewSavedPages();
-            document.getElementById('ubcClearBtn').onclick = () => this.clearAllData();
-            document.getElementById('ubcGenerateSearch').onclick = () => this.generateSearchLinks();
-            document.getElementById('ubcCheckVoter').onclick = () => this.checkVoterStatus();
-            document.getElementById('ubcExportFormat').addEventListener('change', () => this.updatePreview());
-            document.getElementById('ubcDataScope').addEventListener('change', () => this.updatePreview());
-            document.getElementById('ubcAutofillBtn').onclick = () => this.autofillForm();
-            document.getElementById('ubcImportBtn').onclick = () => this.importSearchData();
-
-            // Maps event listeners
-            document.getElementById('ubcGoogleMapsBtn').onclick = () => {
-                const address = document.getElementById('ubcQuickMaps').value.trim();
-                if (address) {
-                    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-                    window.open(mapsUrl, '_blank');
-                }
-            };
-
-            document.getElementById('ubcBingMapsBtn').onclick = () => {
-                const address = document.getElementById('ubcQuickMaps').value.trim();
-                if (address) {
-                    const bingUrl = `https://www.bing.com/maps?q=${encodeURIComponent(address)}`;
-                    window.open(bingUrl, '_blank');
-                }
-            };
-
-            document.getElementById('ubcOpenstreetMapsBtn').onclick = () => {
-                const address = document.getElementById('ubcQuickMaps').value.trim();
-                if (address) {
-                    const streetURL = `https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`;
-                    window.open(streetURL, '_blank');
-                }
-            };
-
-            document.getElementById('ubcOpenEarth').onclick = () => {
-                const address = document.getElementById('ubcQuickMaps').value.trim();
-                if (address) {
-                    const earthURL = `https://earth.google.com/web/search/${encodeURIComponent(address)}`;
-                    window.open(earthURL, '_blank');
-                }
-            };
+        extractCurrentPageData() {
+            this.currentPageData = this.siteExtractor.extractData();
+            return this.currentPageData;
         }
+
+
+createUI() {
+    // Remove existing UI if present
+    const existingUI = document.getElementById('ubc-exporter-ui');
+    if (existingUI) {
+        existingUI.remove();
+    }
+
+    // Create main container
+    const container = document.createElement('div');
+    container.id = 'ubc-exporter-ui';
+
+    if (this.isMobile) {
+        container.style.cssText = `
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            z-index: 10000;
+            font-family: Arial, sans-serif;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-size: 14px;
+            max-height: 80vh;
+            overflow-y: auto;
+        `;
+    } else {
+        container.style.cssText = `
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            width: 500px;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            z-index: 10000;
+            font-family: Arial, sans-serif;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            max-height: 80vh;
+            overflow-y: auto;
+        `;
+    }
+
+    // Header with site info and branding
+    const header = document.createElement('div');
+    header.style.cssText = 'border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 15px;';
+
+    const titleRow = document.createElement('div');
+    titleRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;';
+
+    const title = document.createElement('h3');
+    const siteNames = {
+        'fastbackgroundcheck': 'FastBackgroundCheck',
+        'fastpeoplesearch': 'FastPeopleSearch',
+        'zabasearch': 'ZabaSearch',
+        'vote.org': 'Vote.org'
+    };
+    title.textContent = `Universal Exporter v2.2.0 - ${siteNames[this.site] || this.site}`;
+    title.style.cssText = 'margin: 0; margin-left: 100px; color: #2c3e50; font-size: 16px;';
+    titleRow.appendChild(title);
+    header.appendChild(titleRow);
+
+    // Quick navigation links
+    const navLinks = document.createElement('div');
+    navLinks.style.cssText = 'display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; margin-left: 50px; font-size: 11px;';
+    navLinks.innerHTML = `
+        <a href="https://www.fastbackgroundcheck.com" target="_blank" style="color: #3498db; text-decoration: none; padding: 3px 6px; border: 1px solid #3498db; border-radius: 3px;">FastBackgroundCheck</a>
+        <a href="https://www.fastpeoplesearch.com" target="_blank" style="color: #27ae60; text-decoration: none; padding: 3px 6px; border: 1px solid #27ae60; border-radius: 3px;">FastPeopleSearch</a>
+        <a href="https://www.zabasearch.com" target="_blank" style="color: #f39c12; text-decoration: none; padding: 3px 6px; border: 1px solid #f39c12; border-radius: 3px;">ZabaSearch</a>
+        <a href="https://verify.vote.org/" target="_blank" style="color: #9b59b6; text-decoration: none; padding: 3px 6px; border: 1px solid #9b59b6; border-radius: 3px;">Vote.org</a>
+    `;
+    header.appendChild(navLinks);
+
+    // Search Section
+    const searchSection = document.createElement('div');
+    searchSection.style.cssText = 'margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; border: 1px solid #e9ecef;';
+    searchSection.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 8px; color: #2c3e50;">Quick Search:</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <input type="text" id="ubcSearchFirstName" placeholder="First Name *" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
+            <input type="text" id="ubcSearchLastName" placeholder="Last Name *" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <input type="text" id="ubcSearchCity" placeholder="City (optional)" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
+            <input type="text" id="ubcSearchState" placeholder="State *" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
+        </div>
+        <div style="font-size: 10px; color: #666; margin-bottom: 8px;">
+            * Required fields. State is required for all searches.
+        </div>
+        <button id="ubcGenerateSearch" style="background: #9b59b6; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;">Generate Search Links</button>
+        <div id="ubcSearchResults" style="margin-top: 10px; font-size: 11px; display: none;"></div>
+    `;
+
+    // Vote.org API Section
+    const voteOrgSection = document.createElement('div');
+    voteOrgSection.style.cssText = 'margin-bottom: 15px; padding: 10px; background: #f0e6ff; border-radius: 4px; border: 1px solid #d9c2ff;';
+    voteOrgSection.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 8px; color: #6b46c1;">Vote.org API Check:</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <input type="text" id="ubcVoteFirstName" placeholder="First Name *" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
+            <input type="text" id="ubcVoteLastName" placeholder="Last Name *" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
+            <input type="text" id="ubcVoteStreet" placeholder="Street Address *" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px; width: auto;">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <input type="text" id="ubcVoteCity" placeholder="City *" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
+            <input type="text" id="ubcVoteState" placeholder="State *" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <input type="text" id="ubcVoteZip" placeholder="ZIP Code *" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
+            <input type="text" id="ubcVoteYear" placeholder="Birth Year (YYYY) *" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
+        </div>
+        <div style="font-size: 10px; color: #666; margin-bottom: 8px;">
+            * Required fields. Date of birth will be set to 01/01/YYYY automatically. see why <a href="https://gist.github.com/airborne-commando/cfdf2c1d6e27520f7446f6e774285237#voter-extraction-lite" target="_blank" style="color: #9b59b6">here</a>.
+        </div>
+        <button id="ubcCheckVoter" style="background: #6b46c1; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;">Check Voter Status via API</button>
+        <div id="ubcVoteResults" style="margin-top: 10px; font-size: 11px; display: none;"></div>
+    `;
+
+    // Current page info
+    const pageInfo = document.createElement('div');
+    pageInfo.style.cssText = 'margin-bottom: 10px; padding: 8px; background: #e8f4fd; border-radius: 4px; font-size: 12px;';
+
+    const pageType = this.currentPageData.pageType === 'search_results' ? 'Search Results' :
+                   this.currentPageData.pageType === 'person_details' ? 'Person Details' :
+                   this.currentPageData.pageType === 'people_list' ? 'People List' :
+                   this.currentPageData.pageType === 'voter_registration_results' ? 'Voter Registration' :
+                   this.currentPageData.pageType === 'no_registration' ? 'No Registration' :
+                   this.currentPageData.pageType === 'search_form' ? 'Search Form' : 'No Results';
+
+    let locationInfo = '';
+    if (this.currentPageData.searchLocation) {
+        const loc = this.currentPageData.searchLocation;
+        if (loc.state && loc.cityOrCounty) {
+            locationInfo = `<br><strong>Location:</strong> ${loc.cityOrCounty}, ${loc.state}`;
+        } else if (loc.state) {
+            locationInfo = `<br><strong>Location:</strong> ${loc.state}`;
+        }
+    }
+
+    pageInfo.innerHTML = `
+        <strong>Site:</strong> ${siteNames[this.site] || this.site}<br>
+        <strong>Page Type:</strong> ${pageType}<br>
+        <strong>Records Found:</strong> ${this.currentPageData.results.length}${locationInfo}<br>
+        <small>${window.location.href}</small>
+    `;
+
+    // Action buttons
+    const actionButtons = document.createElement('div');
+    actionButtons.style.cssText = this.isMobile ?
+        'margin: 10px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;' :
+        'margin: 10px 0; display: flex; flex-wrap: wrap; gap: 8px;';
+
+    actionButtons.innerHTML = this.isMobile ? `
+        <button id="ubcSavePageBtn" style="background: #3498db; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; grid-column: 1 / -1;">Save Current Page</button>
+        <button id="ubcExportBtn" style="background: #27ae60; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">Export Data</button>
+        <button id="ubcViewSavedBtn" style="background: #f39c12; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">View Saved</button>
+        <button id="ubcAutofillBtn" style="background: #9b59b6; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">Autofill Form</button>
+        <button id="ubcImportBtn" style="background: #e67e22; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">Import Data</button>
+        <button id="ubcClearBtn" style="background: #e74c3c; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">Clear Data</button>
+    ` : `
+        <button id="ubcSavePageBtn" style="background: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Save Page</button>
+        <button id="ubcExportBtn" style="background: #27ae60; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Export</button>
+        <button id="ubcViewSavedBtn" style="background: #f39c12; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">View Saved</button>
+        <button id="ubcAutofillBtn" style="background: #9b59b6; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Autofill</button>
+        <button id="ubcImportBtn" style="background: #e67e22; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Import</button>
+        <button id="ubcClearBtn" style="background: #e74c3c; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Clear</button>
+    `;
+
+    // Quick Maps Section
+    const quickMapsSection = document.createElement('div');
+    quickMapsSection.style.cssText = 'margin-bottom: 15px; padding: 10px; background: #fff3cd; border-radius: 4px; border: 1px solid #ffeaa7;';
+    quickMapsSection.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 8px; color: #856404;">🗺️ Quick Maps:</div>
+        <div style="margin-bottom: 8px;">
+            <input type="text" id="ubcQuickMaps" placeholder="Enter address for maps..."
+                   style="width: 70%; padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px; margin-bottom: 8px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button id="ubcGoogleMapsBtn" style="background: #4285f4; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                    Google Maps
+                </button>
+                <button id="ubcBingMapsBtn" style="background: #008373; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                    Bing Maps
+                </button>
+                <button id="ubcOpenstreetMapsBtn" style="background: #7ebc6f; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                OpenStreetMap
+            </button>
+                <button id="ubcOpenEarth" style="background: #4285f4; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                Google Earth
+            </button>
+            </div>
+        </div>
+        <div style="font-size: 10px; color: #666;">
+            Quick address lookup on all mapping platforms
+        </div>
+`;
+
+    // Export options
+    const optionsDiv = document.createElement('div');
+    optionsDiv.style.cssText = 'margin: 10px 0;';
+    optionsDiv.innerHTML = `
+        <label style="display: block; margin-bottom: 8px; font-weight: bold;">Export Format:</label>
+        <select id="ubcExportFormat" style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            <option value="json">JSON</option>
+            <option value="txt">Text</option>
+        </select>
+        <label style="display: block; margin-bottom: 8px; font-weight: bold;">Data Scope:</label>
+        <select id="ubcDataScope" style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            <option value="current">Current Page Only</option>
+            <option value="all">All Saved Pages</option>
+            <option value="site_all">All ${siteNames[this.site] || this.site} Pages</option>
+        </select>
+    `;
+
+    // Status display
+    const statusDiv = document.createElement('div');
+    statusDiv.id = 'ubcExporterStatus';
+    statusDiv.style.cssText = 'margin: 10px 0; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 13px;';
+    statusDiv.innerHTML = '<strong>Status:</strong> Ready';
+
+    // Preview area
+    const previewDiv = document.createElement('div');
+    previewDiv.id = 'ubcResultsPreview';
+    previewDiv.style.cssText = `margin-top: 10px; border: 1px solid #ddd; padding: 10px; height: ${this.isMobile ? '150px' : '200px'}; overflow-y: auto; font-size: 11px; background: #f9f9f9; border-radius: 4px;`;
+    previewDiv.innerHTML = '<div>Preview will appear here...</div>';
+
+    // Footer with additional links
+    const footer = document.createElement('div');
+    footer.style.cssText = 'margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; font-size: 10px; color: #666; text-align: center;';
+    footer.innerHTML = `
+        <div style="margin-bottom: 5px;">
+            <strong>Quick Navigation:</strong>
+            <a href="https://www.fastbackgroundcheck.com" target="_blank" style="color: #3498db; margin: 0 5px;">FBC</a> •
+            <a href="https://www.fastpeoplesearch.com" target="_blank" style="color: #27ae60; margin: 0 5px;">FPS</a> •
+            <a href="https://www.zabasearch.com" target="_blank" style="color: #f39c12; margin: 0 5px;">Zaba</a> •
+            <a href="https://verify.vote.org/" target="_blank" style="color: #9b59b6; margin: 0 5px;">Vote</a>
+        </div>
+    `;
+
+    // Assemble UI
+    container.appendChild(header);
+    container.appendChild(searchSection);
+    container.appendChild(voteOrgSection);
+    container.appendChild(pageInfo);
+    container.appendChild(actionButtons);
+    container.appendChild(quickMapsSection);
+    container.appendChild(optionsDiv);
+    container.appendChild(statusDiv);
+    container.appendChild(previewDiv);
+    container.appendChild(footer);
+
+    document.body.appendChild(container);
+
+    // Event listeners - ADD THEM AFTER ALL ELEMENTS ARE CREATED
+    document.getElementById('ubcSavePageBtn').onclick = () => this.saveCurrentPage();
+    document.getElementById('ubcExportBtn').onclick = () => this.exportData();
+    document.getElementById('ubcViewSavedBtn').onclick = () => this.viewSavedPages();
+    document.getElementById('ubcClearBtn').onclick = () => this.clearAllData();
+    document.getElementById('ubcGenerateSearch').onclick = () => this.generateSearchLinks();
+    document.getElementById('ubcCheckVoter').onclick = () => this.checkVoterStatus();
+    document.getElementById('ubcExportFormat').addEventListener('change', () => this.updatePreview());
+    document.getElementById('ubcDataScope').addEventListener('change', () => this.updatePreview());
+    document.getElementById('ubcAutofillBtn').onclick = () => this.autofillForm();
+    document.getElementById('ubcImportBtn').onclick = () => this.importSearchData();
+
+    // Add event listener for quick maps
+    document.getElementById('ubcGoogleMapsBtn').onclick = () => {
+        const address = document.getElementById('ubcQuickMaps').value.trim();
+        if (address) {
+            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+            window.open(mapsUrl, '_blank');
+        }
+    };
+
+    document.getElementById('ubcBingMapsBtn').onclick = () => {
+        const address = document.getElementById('ubcQuickMaps').value.trim();
+        if (address) {
+            const bingUrl = `https://www.bing.com/maps?q=${encodeURIComponent(address)}`;
+            window.open(bingUrl, '_blank');
+        }
+    };
+
+    document.getElementById('ubcOpenstreetMapsBtn').onclick = () => {
+        const address = document.getElementById('ubcQuickMaps').value.trim();
+        if (address) {
+            const SteetURL = `https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`;
+            window.open(SteetURL, '_blank');
+        }
+    };
+
+    document.getElementById('ubcOpenEarth').onclick = () => {
+        const address = document.getElementById('ubcQuickMaps').value.trim();
+        if (address) {
+            const EarthURL = `https://earth.google.com/web/search/${encodeURIComponent(address)}`;
+            window.open(EarthURL, '_blank');
+        }
+    };
+
+    // Add event listeners for advanced maps AFTER the section is added to DOM
+    setTimeout(() => {
+        const geocodeBtn = document.getElementById('ubcGeocodeBtn');
+        const streetViewBtn = document.getElementById('ubcStreetViewBtn');
+        const mapsAddressInput = document.getElementById('ubcMapsAddress');
+
+        if (geocodeBtn) {
+            geocodeBtn.onclick = () => this.showMapForAddress();
+        }
+        if (streetViewBtn) {
+            streetViewBtn.onclick = () => this.showStreetView();
+        }
+        if (mapsAddressInput) {
+            mapsAddressInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.showMapForAddress();
+                }
+            });
+        }
+    }, 100);
+
+    this.log(`Universal exporter initialized for ${siteNames[this.site]}`);
+    this.updatePreview();
+}
+
 
         async checkVoterStatus() {
             const firstName = document.getElementById('ubcVoteFirstName').value.trim();
@@ -2218,6 +2310,7 @@
             const zipCode = document.getElementById('ubcVoteZip').value.trim();
             const dobYear = document.getElementById('ubcVoteYear').value.trim();
 
+            // Validate inputs
             if (!firstName || !lastName || !streetAddress || !city || !state || !zipCode || !dobYear) {
                 this.log('Please fill all required fields for voter check');
                 return;
@@ -2246,6 +2339,7 @@
                 if (result.success) {
                     const voterInfo = VoteOrgAPI.parseVoterResponse(result.responseText);
 
+                    // Display results
                     const resultsDiv = document.getElementById('ubcVoteResults');
                     let html = '<div style="font-weight: bold; margin-bottom: 5px;">Voter Registration Results:</div>';
 
@@ -2264,12 +2358,14 @@
                     }
 
                     html += `<div><strong>Status:</strong> ${voterInfo.registrationStatus}</div>`;
-                    html += `<div style="margin-top: 8px; font-size: 12px; color: #666;">API request successful</div>`;
+                    html += `<div style="margin-top: 8px; font-size: 10px; color: #666;">API request successful</div>`;
 
                     resultsDiv.innerHTML = html;
                     resultsDiv.style.display = 'block';
 
                     this.log(`Voter check completed: ${voterInfo.registrationStatus}`);
+
+                    // Save the result
                     this.saveVoterResult(voterInfo, voterData);
 
                 } else {
@@ -2286,7 +2382,7 @@
             }
         }
 
-        async saveVoterResult(voterInfo, voterData) {
+        saveVoterResult(voterInfo, voterData) {
             try {
                 const pageKey = `ubc_vote.org_api_${Date.now()}`;
                 const pageData = {
@@ -2300,9 +2396,10 @@
                     searchData: voterData
                 };
 
-                await GMApi.setValue(pageKey, pageData);
+                GM_setValue(pageKey, pageData);
 
-                const savedPages = await GMApi.getValue('ubc_saved_pages', []);
+                // Add to the list of saved pages
+                const savedPages = GM_getValue('ubc_saved_pages', []);
                 savedPages.push({
                     key: pageKey,
                     url: pageData.url,
@@ -2312,7 +2409,7 @@
                     siteName: 'Vote.org',
                     location: { state: voterData.state, cityOrCounty: voterData.city }
                 });
-                await GMApi.setValue('ubc_saved_pages', savedPages);
+                GM_setValue('ubc_saved_pages', savedPages);
 
                 this.log('Saved voter check result');
                 this.updatePreview();
@@ -2321,12 +2418,14 @@
             }
         }
 
+        // ... (rest of the existing methods remain the same)
         generateSearchLinks() {
             const firstName = document.getElementById('ubcSearchFirstName').value.trim();
             const lastName = document.getElementById('ubcSearchLastName').value.trim();
             const city = document.getElementById('ubcSearchCity').value.trim();
             const state = document.getElementById('ubcSearchState').value.trim();
 
+            // Validate inputs
             if (!SearchUtility.validateName(firstName) || !SearchUtility.validateName(lastName)) {
                 this.log('Please enter both first and last name');
                 return;
@@ -2337,6 +2436,7 @@
                 return;
             }
 
+            // Generate URLs
             const urls = SearchUtility.generateSearchURLs(firstName, lastName, city, state);
             const resultsDiv = document.getElementById('ubcSearchResults');
 
@@ -2346,7 +2446,7 @@
             html += '<div style="margin-bottom: 8px;">';
             html += '<strong style="color: #27ae60;">FastPeopleSearch:</strong><br>';
             urls.fastpeoplesearch.forEach(url => {
-                html += `<a href="${url}" target="_blank" style="color: #27ae60; font-size: 12px; display: block; margin: 2px 0; word-break: break-all;">${url}</a>`;
+                html += `<a href="${url}" target="_blank" style="color: #27ae60; font-size: 10px; display: block; margin: 2px 0; word-break: break-all;">${url}</a>`;
             });
             html += '</div>';
 
@@ -2354,7 +2454,7 @@
             html += '<div style="margin-bottom: 8px;">';
             html += '<strong style="color: #3498db;">FastBackgroundCheck:</strong><br>';
             urls.fastbackgroundcheck.forEach(url => {
-                html += `<a href="${url}" target="_blank" style="color: #3498db; font-size: 12px; display: block; margin: 2px 0; word-break: break-all;">${url}</a>`;
+                html += `<a href="${url}" target="_blank" style="color: #3498db; font-size: 10px; display: block; margin: 2px 0; word-break: break-all;">${url}</a>`;
             });
             html += '</div>';
 
@@ -2362,7 +2462,7 @@
             html += '<div style="margin-bottom: 8px;">';
             html += '<strong style="color: #f39c12;">ZabaSearch:</strong><br>';
             urls.zabasearch.forEach(url => {
-                html += `<a href="${url}" target="_blank" style="color: #f39c12; font-size: 12px; display: block; margin: 2px 0; word-break: break-all;">${url}</a>`;
+                html += `<a href="${url}" target="_blank" style="color: #f39c12; font-size: 10px; display: block; margin: 2px 0; word-break: break-all;">${url}</a>`;
             });
             html += '</div>';
 
@@ -2379,7 +2479,7 @@
             console.log(`[Universal Exporter] ${message}`);
         }
 
-        async saveCurrentPage() {
+        saveCurrentPage() {
             if (!this.currentPageData || this.currentPageData.results.length === 0) {
                 this.log('No data to save on current page');
                 return;
@@ -2393,9 +2493,10 @@
                     siteName: this.getSiteName()
                 };
 
-                await GMApi.setValue(pageKey, pageData);
+                GM_setValue(pageKey, pageData);
 
-                const savedPages = await GMApi.getValue('ubc_saved_pages', []);
+                // Also add to the list of saved pages
+                const savedPages = GM_getValue('ubc_saved_pages', []);
                 savedPages.push({
                     key: pageKey,
                     url: this.currentPageData.url,
@@ -2405,7 +2506,7 @@
                     siteName: this.getSiteName(),
                     location: this.currentPageData.searchLocation
                 });
-                await GMApi.setValue('ubc_saved_pages', savedPages);
+                GM_setValue('ubc_saved_pages', savedPages);
 
                 this.log(`Saved current page with ${this.currentPageData.results.length} records`);
                 this.updatePreview();
@@ -2424,9 +2525,9 @@
             return siteNames[this.site] || this.site;
         }
 
-        async getAllSavedData(scope = 'all') {
+        getAllSavedData(scope = 'all') {
             try {
-                const savedPages = await GMApi.getValue('ubc_saved_pages', []);
+                const savedPages = GM_getValue('ubc_saved_pages', []);
                 let filteredPages = savedPages;
 
                 if (scope === 'site_all') {
@@ -2434,15 +2535,15 @@
                 }
 
                 const allData = [];
-                for (const pageInfo of filteredPages) {
-                    const pageData = await GMApi.getValue(pageInfo.key);
+                filteredPages.forEach(pageInfo => {
+                    const pageData = GM_getValue(pageInfo.key);
                     if (pageData) {
                         allData.push({
                             ...pageData,
                             savedKey: pageInfo.key
                         });
                     }
-                }
+                });
 
                 return allData;
             } catch (error) {
@@ -2451,7 +2552,7 @@
             }
         }
 
-        async updatePreview() {
+        updatePreview() {
             const format = document.getElementById('ubcExportFormat').value;
             const scope = document.getElementById('ubcDataScope').value;
             const previewDiv = document.getElementById('ubcResultsPreview');
@@ -2463,7 +2564,7 @@
                 dataToPreview = this.currentPageData;
                 title = 'Current Page Data';
             } else {
-                const allData = await this.getAllSavedData(scope);
+                const allData = this.getAllSavedData(scope);
                 dataToPreview = { pages: allData, totalPages: allData.length };
                 const scopeText = scope === 'all' ? 'All Sites' : `All ${this.getSiteName()} Pages`;
                 title = `${scopeText} (${allData.length} pages)`;
@@ -2486,7 +2587,7 @@
 
             previewDiv.innerHTML = `
                 <div style="margin-bottom: 5px; font-weight: bold;">${title}</div>
-                <div style="font-family: monospace; white-space: pre-wrap; font-size: 12px;">${previewContent}</div>
+                <div style="font-family: monospace; white-space: pre-wrap; font-size: 10px;">${previewContent}</div>
             `;
         }
 
@@ -2566,7 +2667,7 @@
             }
         }
 
-        async exportData() {
+        exportData() {
             const format = document.getElementById('ubcExportFormat').value;
             const scope = document.getElementById('ubcDataScope').value;
 
@@ -2577,7 +2678,7 @@
                 dataToExport = this.currentPageData;
                 filename = `${this.site}_current_${Date.now()}.${format}`;
             } else {
-                dataToExport = await this.getAllSavedData(scope);
+                dataToExport = this.getAllSavedData(scope);
                 const scopeText = scope === 'all' ? 'all_sites' : `all_${this.site}_pages`;
                 filename = `background_checks_${scopeText}_${Date.now()}.${format}`;
             }
@@ -2603,7 +2704,7 @@
                 }
 
                 const blob = new Blob([content], { type: mimeType });
-                GMApi.download({
+                GM_download({
                     url: URL.createObjectURL(blob),
                     name: filename,
                     saveAs: true
@@ -2656,6 +2757,7 @@
                 text += `Total Pages: ${data.length}\n`;
                 text += `Total Records: ${data.reduce((sum, page) => sum + page.results.length, 0)}\n`;
 
+                // Group by site
                 const sites = {};
                 data.forEach(page => {
                     if (!sites[page.site]) {
@@ -2703,8 +2805,8 @@
             }
         }
 
-        async viewSavedPages() {
-            const savedPages = await GMApi.getValue('ubc_saved_pages', []);
+        viewSavedPages() {
+            const savedPages = GM_getValue('ubc_saved_pages', []);
             const previewDiv = document.getElementById('ubcResultsPreview');
 
             if (savedPages.length === 0) {
@@ -2712,6 +2814,7 @@
                 return;
             }
 
+            // Group by site
             const sites = {};
             savedPages.forEach(page => {
                 if (!sites[page.site]) {
@@ -2754,17 +2857,17 @@
             previewDiv.innerHTML = html;
         }
 
-        async clearAllData() {
+        clearAllData() {
             if (!confirm('Are you sure you want to clear ALL saved data from ALL sites?')) {
                 return;
             }
 
             try {
-                const savedPages = await GMApi.getValue('ubc_saved_pages', []);
-                for (const page of savedPages) {
-                    await GMApi.deleteValue(page.key);
-                }
-                await GMApi.setValue('ubc_saved_pages', []);
+                const savedPages = GM_getValue('ubc_saved_pages', []);
+                savedPages.forEach(page => {
+                    GM_deleteValue(page.key);
+                });
+                GM_setValue('ubc_saved_pages', []);
 
                 this.log(`Cleared all saved data (${savedPages.length} pages from all sites)`);
                 this.updatePreview();
@@ -2779,6 +2882,7 @@
                 if (success) {
                     this.log('Form autofilled successfully');
 
+                    // Save the filled data for future use
                     const formData = this.siteExtractor.extractFormData();
                     if (formData) {
                         this.siteExtractor.saveFormData(formData);
@@ -2792,12 +2896,8 @@
         }
 
         importSearchData() {
+            // Implementation for import functionality
             this.log('Import functionality coming soon');
-        }
-
-        extractCurrentPageData() {
-            this.currentPageData = this.siteExtractor.extractData();
-            return this.currentPageData;
         }
     }
 
