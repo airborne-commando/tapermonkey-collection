@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Link Extractor with Load/Save
 // @namespace    http://tampermonkey.net/
-// @version      1.3
+// @version      1.4
 // @description  Extract links from pages and save/load them along with excluded words in the browser storage
 // @author       airborne-commando
 // @match        *://*/*
