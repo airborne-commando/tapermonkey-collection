@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @updateURL    https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
 // @downloadURL  https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
-// @version      2.2.6
+// @version      2.2.7
 // @description  Export results from multiple background check sites: FastBackgroundCheck, FastPeopleSearch, ZabaSearch, and Vote.org with API integration
 // @author       airborne-commando
 // @match        https://www.fastbackgroundcheck.com/*
@@ -12,6 +12,7 @@
 // @match        https://www.zabasearch.com/*
 // @match        https://verify.vote.org/your-status
 // @match        https://verify.vote.org/
+// @grant        GM_addStyle
 // @grant        GM_download
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -21,10 +22,58 @@
 // @connect      vote.org
 // @connect      maps.googleapis.com
 // @license      GPL 3.0
+// @run-at       document-end
 // ==/UserScript==
 
 (function() {
+
     'use strict';
+    GM_addStyle(`
+        @media (max-width: 600px) {
+            /* Target inputs inside the container - override inline font-size */
+            div[style*="background: rgb(240, 230, 255)"] input {
+                font-size: 10px !important;
+            }
+            /* Target div with font-size: 10px and other text elements inside container */
+            div[style*="background: rgb(240, 230, 255)"] > div[style*="font-size: 10px"],
+            div[style*="background: rgb(240, 230, 255)"] > button,
+            div[style*="background: rgb(240, 230, 255)"] > div[id="ubcVoteResults"] {
+                font-size: 10px !important;
+            }
+        }
+    `);
+
+        // Inject CSS media query for mobile font size override
+    GM_addStyle(`
+        @media (max-width: 600px) {
+            /* Target inputs within the container */
+            div[style*="background: rgb(248, 249, 250)"] input {
+                font-size: 10px !important;
+            }
+            /* Target the font-size: 10px div and other text/buttons inside the container */
+            div[style*="background: rgb(248, 249, 250)"] > div[style*="font-size: 10px"],
+            div[style*="background: rgb(248, 249, 250)"] > button,
+            div[style*="background: rgb(248, 249, 250)"] > div[id="ubcSearchResults"] {
+                font-size: 10px !important;
+            }
+        }
+    `);
+
+    GM_addStyle(`
+        @media (max-width: 600px) {
+            /* Target inputs and selects inside Age Calculator container */
+            div[style*="background: rgb(232, 246, 243)"] input,
+            div[style*="background: rgb(232, 246, 243)"] select {
+                font-size: 10px !important;
+            }
+            /* Target button, result div, and any small font-size text */
+            div[style*="background: rgb(232, 246, 243)"] > button,
+            div[style*="background: rgb(232, 246, 243)"] > div[id="ubcAgeResults"],
+            div[style*="background: rgb(232, 246, 243)"] > div[style*="font-size: 10px"] {
+                font-size: 10px !important;
+            }
+        }
+    `);
 
     // Search Utility Class
     class SearchUtility {
@@ -43643,7 +43692,7 @@ createUI() {
             <input type="text" id="ubcVoteYear" placeholder="Birth Year (YYYY) *" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
         </div>
         <div style="font-size: 10px; color: #666; margin-bottom: 8px;">
-            * Required fields. Date of birth will be set to 01/01/YYYY automatically. see why <a href="https://gist.github.com/airborne-commando/cfdf2c1d6e27520f7446f6e774285237#voter-extraction-lite" target="_blank" style="color: #9b59b6">here</a>.
+            * Required fields. Date of birth will be set to 01/01/YYYY automatically. see why <a href="https://github.com/airborne-commando/tampermonkey-collection?tab=readme-ov-file#voter-extraction-lite" target="_blank" style="color: #9b59b6">here</a>.
         </div>
         <button id="ubcCheckVoter" style="background: #6b46c1; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;">Check Voter Status via API</button>
         <div id="ubcVoteResults" style="margin-top: 10px; font-size: 11px; display: none;"></div>
@@ -43688,16 +43737,21 @@ createUI() {
         <button id="ubcExportBtn" style="background: #27ae60; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">Export Data</button>
         <button id="ubcViewSavedBtn" style="background: #f39c12; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">View Saved</button>
         <button id="ubcAutofillBtn" style="background: #9b59b6; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">Autofill Form</button>
-        <button id="ubcImportBtn" style="background: #e67e22; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">Import Data</button>
+
         <button id="ubcClearBtn" style="background: #e74c3c; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">Clear Data</button>
     ` : `
         <button id="ubcSavePageBtn" style="background: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Save Page</button>
         <button id="ubcExportBtn" style="background: #27ae60; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Export</button>
         <button id="ubcViewSavedBtn" style="background: #f39c12; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">View Saved</button>
         <button id="ubcAutofillBtn" style="background: #9b59b6; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Autofill</button>
-        <button id="ubcImportBtn" style="background: #e67e22; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Import</button>
+
         <button id="ubcClearBtn" style="background: #e74c3c; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Clear</button>
     `;
+
+// Add later, wil have to figure this one out...
+
+        // <button id="ubcImportBtn" style="background: #e67e22; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">Import Data</button>
+        // <button id="ubcImportBtn" style="background: #e67e22; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Import</button>
 
     // Quick Maps Section
     const quickMapsSection = document.createElement('div');
@@ -43795,7 +43849,8 @@ createUI() {
     document.getElementById('ubcExportFormat').addEventListener('change', () => this.updatePreview());
     document.getElementById('ubcDataScope').addEventListener('change', () => this.updatePreview());
     document.getElementById('ubcAutofillBtn').onclick = () => this.autofillForm();
-    document.getElementById('ubcImportBtn').onclick = () => this.importSearchData();
+    // Future function
+    // document.getElementById('ubcImportBtn').onclick = () => this.importSearchData();
 
     // Add ZIP code auto-fill for vote.org section
     this.setupZipAutoFillForVoteSection();
@@ -44566,7 +44621,8 @@ displayAgeResults(result, resultsDiv) {
 
         importSearchData() {
             // Implementation for import functionality
-            this.log('Import functionality coming soon');
+            // this.log('Import functionality coming soon');
+            // Import data that was exported. Would be better.
         }
     }
 
