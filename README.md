@@ -145,67 +145,86 @@ Use this when dealing with a CAPTCHA, how would you know? if the error sign isn'
 ## Example output
 
 
-    firstName,lastName,dob,zip,county,status,result,timestamp
-    "firstname","lastname","MM/DD/YYYY","zip","county","found","YOUR RESIDENTIAL ADDRESS
-    zip  address
-    YOUR MAILING ADDRESS
-
-    Is your information up to date?
-    If you need to update your voter registration, please visit
-    vote.pa.gov/Register and submit an online voter registration application.
-    VOTER RECORD DETAILS
-
-    Status:
-    ACTIVE
-    Date of Birth:
-    mm/dd/yyyy
-    Party:
-    DEMOCRATIC
-    Are you an annual mail-in or absentee voter?
-    NO
-    Do you have an approved mail ballot request for the upcoming election?
-    NO
-    VOTING DISTRICTS
-
-    County:
-    ERIE
-    Precinct:
-    MILLCREEK TOWNSHIP 6TH DISTRICT
-    Municipality:
-    MILLCREEK TOWNSHIP
-    United States Congress:
-    16TH CONGRESSIONAL DISTRICT
-    State Senate:
-    49TH SENATORIAL DISTRICT
-    State House:
-    3RD LEGISLATIVE DISTRICT
-    COUNTY BOARD OF ELECTIONS
-
-    140 W 6TH ST RM 112 ERIE, PA 16501
-    Phone:
-    (814) 451-6275
-    Email:
-    TFERNANDEZ@ERIECOUNTYPA.GOV
-    If you have any questions about your voter record or voting districts, you may find county election office contact information at
-    www.vote.pa.gov/county
-    YOUR ELECTION DAY POLLING PLACE
-
-    Polling Place for MILLCREEK TOWNSHIP 6TH DISTRICT
-    place
-    address
-    ERIE,
-    PA
-    zip
-    State:
-    Zip Code:","2025-10-24T14:06:01.376Z"
-    
+        firstName,lastName,dob,zip,county,status,result,timestamp
+        "firstname","lastname","MM/DD/YYYY","zip","county","found","YOUR RESIDENTIAL ADDRESS
+        zip  address
+        YOUR MAILING ADDRESS
+        Is your information up to date?
+        If you need to update your voter registration, please visit
+        vote.pa.gov/Register and submit an online voter registration application.
+        VOTER RECORD DETAILS
+        Status:
+        ACTIVE
+        Date of Birth:
+        mm/dd/yyyy
+        Party:
+        DEMOCRATIC
+        Are you an annual mail-in or absentee voter?
+        NO
+        Do you have an approved mail ballot request for the upcoming election?
+        NO
+        VOTING DISTRICTS
+        County:
+        ERIE
+        Precinct:
+        MILLCREEK TOWNSHIP 6TH DISTRICT
+        Municipality:
+        MILLCREEK TOWNSHIP
+        United States Congress:
+        16TH CONGRESSIONAL DISTRICT
+        State Senate:
+        49TH SENATORIAL DISTRICT
+        State House:
+        3RD LEGISLATIVE DISTRICT
+        COUNTY BOARD OF ELECTIONS
+        140 W 6TH ST RM 112 ERIE, PA 16501
+        Phone:
+        (814) 451-6275
+        Email:
+        TFERNANDEZ@ERIECOUNTYPA.GOV
+        If you have any questions about your voter record or voting districts, you may find county election office contact information at
+        www.vote.pa.gov/county
+        YOUR ELECTION DAY POLLING PLACE
+        Polling Place for MILLCREEK TOWNSHIP 6TH DISTRICT
+        place
+        address
+        ERIE,
+        PA
+        zip
+        State:
+        Zip Code:","2025-10-24T14:06:01.376Z"
 
 
 1. Get taper monkey https://www.tampermonkey.net/ or greasemonkey (mobile).
 2.  Install this script (copy paste)
 3.  profit?
 
----
+-----
+
+**Scripts:**
+
+[universal-search.js](./SCRIPTS/universal-search.js)
+
+[pavoter-bulk.js](./SCRIPTS/pavoter-bulk.js)
+
+Usage for **Vote.org API Check(universal-search.js):**
+
+Input:<br>
+First, last name<br>
+Address: home address street, city, state zip.<br>
+Only unique value is: yyyy
+
+The year is the only value that matters.
+
+Result:<br>
+✓ REGISTERED TO VOTE<br>
+Name: John Doe<br>
+Address: 17201 Elite 1337, city, anywhere 0000.<br>
+Status: Registered to Vote
+
+API request successful
+
+-----
 
 ## Breach.VIP and reddit profile analyzer
 
@@ -233,28 +252,6 @@ TO DO:
 Make the GUI look more clean perhaps?
 
 ---
-
-**Voter info results with vote.org**
-
-[universal-search.js](./SCRIPTS/universal-search.js)
-
-[pavoter-bulk.js](./SCRIPTS/pavoter-bulk.js)
-
----
-
-<img width="694" height="664" alt="image" src="./examples/505825291-8e3da9bd-efd1-477f-97de-4c7dbc48fe1b.png" />
-
-
-<img width="704" height="756" alt="image" src="./examples/505825464-90de10f9-a0b6-491f-a8a8-75323a4d04df.png" />
-
-
-<img width="710" height="894" alt="image" src="./examples/505825940-41342a8a-d01d-4448-b3e6-7ec7156a2198.png" />
-
-<img width="698" height="928" alt="image" src="./examples/505826377-e0bf9f98-0f82-4db5-ad99-daeea82103ec.png" />
-
-<img width="704" height="756" alt="image" src="./examples/505825464-90de10f9-a0b6-491f-a8a8-75323a4d04df.png" />
-
------
 
 # 4chan archive
 
