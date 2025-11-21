@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @updateURL    https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
 // @downloadURL  https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
-// @version      2.2.5
+// @version      2.2.6
 // @description  Export results from multiple background check sites: FastBackgroundCheck, FastPeopleSearch, ZabaSearch, and Vote.org with API integration
 // @author       airborne-commando
 // @match        https://www.fastbackgroundcheck.com/*
@@ -142,6 +142,116 @@
         }
     }
 
+// Age Calculator Utility Class
+class AgeCalculator {
+    static calculateAge(birthDate) {
+        // birthDate can be in various formats: Date object, string, or year
+        let birthDateObj;
+
+        if (birthDate instanceof Date) {
+            birthDateObj = birthDate;
+        } else if (typeof birthDate === 'string') {
+            birthDateObj = new Date(birthDate);
+        } else if (typeof birthDate === 'number') {
+            // Assume it's a year, create date for Jan 1 of that year
+            birthDateObj = new Date(birthDate, 0, 1);
+        } else {
+            return { error: 'Invalid date format' };
+        }
+
+        // Check if date is valid
+        if (isNaN(birthDateObj.getTime())) {
+            return { error: 'Invalid date' };
+        }
+
+        const today = new Date();
+        let age = today.getFullYear() - birthDateObj.getFullYear();
+        const monthDiff = today.getMonth() - birthDateObj.getMonth();
+
+        // Adjust age if birthday hasn't occurred this year
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDateObj.getDate())) {
+            age--;
+        }
+
+        // Calculate exact age with months and days
+        let months = today.getMonth() - birthDateObj.getMonth();
+        let days = today.getDate() - birthDateObj.getDate();
+
+        if (days < 0) {
+            months--;
+            // Get days in previous month
+            const lastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+            days += lastMonth.getDate();
+        }
+
+        if (months < 0) {
+            months += 12;
+        }
+
+        return {
+            years: age,
+            months: months,
+            days: days,
+            exactAge: `${age} years, ${months} months, ${days} days`,
+            isAdult: age >= 18,
+            isSenior: age >= 65
+        };
+    }
+
+    static calculateBirthYearFromAge(age) {
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth();
+
+        // If it's early in the year, they might not have had their birthday yet
+        const birthYear = currentYear - age;
+        const birthYearPrevious = currentYear - age - 1;
+
+        return {
+            currentYear: currentYear,
+            possibleBirthYears: [birthYear, birthYearPrevious],
+            exactBirthYear: `If age ${age} in ${currentYear}, born in ${birthYear} or ${birthYearPrevious}`,
+            ageVerification: `Person born in ${birthYear} would be ${currentYear - birthYear} in ${currentYear}`,
+            birthYearRange: `${birthYearPrevious}-${birthYear}`
+        };
+    }
+
+    static parseDateString(dateString) {
+        // Try to parse various date formats
+        const formats = [
+            /(\d{1,2})\/(\d{1,2})\/(\d{4})/, // MM/DD/YYYY
+            /(\d{4})-(\d{1,2})-(\d{1,2})/,   // YYYY-MM-DD
+            /(\d{1,2})-(\d{1,2})-(\d{4})/,   // DD-MM-YYYY
+            /(\w+)\s+(\d{1,2}),\s+(\d{4})/   // Month DD, YYYY
+        ];
+
+        for (const format of formats) {
+            const match = dateString.match(format);
+            if (match) {
+                if (format === formats[0]) { // MM/DD/YYYY
+                    return new Date(match[3], match[1] - 1, match[2]);
+                } else if (format === formats[1]) { // YYYY-MM-DD
+                    return new Date(match[1], match[2] - 1, match[3]);
+                } else if (format === formats[2]) { // DD-MM-YYYY
+                    return new Date(match[3], match[2] - 1, match[1]);
+                } else if (format === formats[3]) { // Month DD, YYYY
+                    const monthNames = ["january", "february", "march", "april", "may", "june",
+                                      "july", "august", "september", "october", "november", "december"];
+                    const monthIndex = monthNames.indexOf(match[1].toLowerCase());
+                    if (monthIndex !== -1) {
+                        return new Date(match[3], monthIndex, match[2]);
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    static validateAge(age) {
+        const ageNum = parseInt(age);
+        return !isNaN(ageNum) && ageNum >= 0 && ageNum <= 120;
+    }
+}
     // Google Maps Utility Class
     class MapsUtility {
     static async geocodeAddress(address) {
@@ -43460,6 +43570,29 @@ createUI() {
     titleRow.appendChild(title);
     header.appendChild(titleRow);
 
+
+    // Age Calculator Section
+    const ageCalculatorSection = document.createElement('div');
+    ageCalculatorSection.style.cssText = 'margin-bottom: 15px; padding: 10px; background: #e8f6f3; border-radius: 4px; border: 1px solid #a3e4d7;';
+    ageCalculatorSection.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 8px; color: #148f77;">🧮 Age Calculator:</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <input type="text" id="ubcAgeDate" placeholder="Birth Date (MM/DD/YYYY)" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
+            <input type="text" id="ubcAgeYear" placeholder="Or Birth Year (YYYY)" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <input type="text" id="ubcAgeNumber" placeholder="Or Current Age" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
+            <select id="ubcAgeReference" style="padding: 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
+                <option value="current">Current Year</option>
+                <option value="2024">Year 2024</option>
+                <option value="2023">Year 2023</option>
+                <option value="2022">Year 2022</option>
+            </select>
+        </div>
+        <button id="ubcCalculateAge" style="background: #148f77; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;">Calculate Age/Birth Year</button>
+        <div id="ubcAgeResults" style="margin-top: 10px; font-size: 11px; display: none;"></div>
+    `;
+
     // Quick navigation links
     const navLinks = document.createElement('div');
     navLinks.style.cssText = 'display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; margin-left: 50px; font-size: 11px;';
@@ -43646,11 +43779,13 @@ createUI() {
     container.appendChild(optionsDiv);
     container.appendChild(statusDiv);
     container.appendChild(previewDiv);
+    container.appendChild(ageCalculatorSection);
     container.appendChild(footer);
 
     document.body.appendChild(container);
 
     // Event listeners - ADD THEM AFTER ALL ELEMENTS ARE CREATED
+    document.getElementById('ubcCalculateAge').onclick = () => this.calculateAge();
     document.getElementById('ubcSavePageBtn').onclick = () => this.saveCurrentPage();
     document.getElementById('ubcExportBtn').onclick = () => this.exportData();
     document.getElementById('ubcViewSavedBtn').onclick = () => this.viewSavedPages();
@@ -43804,6 +43939,136 @@ createUI() {
                 resultsDiv.style.display = 'block';
             }
         }
+
+calculateAge() {
+    const dateInput = document.getElementById('ubcAgeDate').value.trim();
+    const yearInput = document.getElementById('ubcAgeYear').value.trim();
+    const ageInput = document.getElementById('ubcAgeNumber').value.trim();
+    const referenceYear = document.getElementById('ubcAgeReference').value;
+    const resultsDiv = document.getElementById('ubcAgeResults');
+
+    let result;
+
+    if (dateInput) {
+        // Try to parse the date string
+        const parsedDate = AgeCalculator.parseDateString(dateInput);
+        if (parsedDate) {
+            result = AgeCalculator.calculateAge(parsedDate);
+        } else {
+            // Try direct date parsing
+            const directDate = new Date(dateInput);
+            if (!isNaN(directDate.getTime())) {
+                result = AgeCalculator.calculateAge(directDate);
+            } else {
+                resultsDiv.innerHTML = `<div style="color: #e74c3c;">Invalid date format. Try MM/DD/YYYY or YYYY-MM-DD</div>`;
+                resultsDiv.style.display = 'block';
+                return;
+            }
+        }
+    } else if (yearInput) {
+        const birthYear = parseInt(yearInput);
+        if (!isNaN(birthYear) && birthYear > 1900 && birthYear <= new Date().getFullYear()) {
+            result = AgeCalculator.calculateAgeFromYear(birthYear);
+        } else {
+            resultsDiv.innerHTML = `<div style="color: #e74c3c;">Please enter a valid birth year (1900-${new Date().getFullYear()})</div>`;
+            resultsDiv.style.display = 'block';
+            return;
+        }
+    } else if (ageInput) {
+        if (!AgeCalculator.validateAge(ageInput)) {
+            resultsDiv.innerHTML = `<div style="color: #e74c3c;">Please enter a valid age (0-120)</div>`;
+            resultsDiv.style.display = 'block';
+            return;
+        }
+
+        const ageNum = parseInt(ageInput);
+        const refYear = referenceYear === 'current' ? new Date().getFullYear() : parseInt(referenceYear);
+
+        result = this.calculateBirthYearFromAge(ageNum, refYear);
+
+    } else {
+        resultsDiv.innerHTML = `<div style="color: #e74c3c;">Please enter a birth date, birth year, or current age</div>`;
+        resultsDiv.style.display = 'block';
+        return;
+    }
+
+    if (result.error) {
+        resultsDiv.innerHTML = `<div style="color: #e74c3c;">Error: ${result.error}</div>`;
+    } else {
+        this.displayAgeResults(result, resultsDiv);
+    }
+
+    resultsDiv.style.display = 'block';
+    this.log('Age calculation completed');
+}
+
+calculateBirthYearFromAge(age, referenceYear = new Date().getFullYear()) {
+    // Account for birthday possibly not occurring yet in the reference year
+    const birthYear1 = referenceYear - age;
+    const birthYear2 = referenceYear - age - 1;
+
+    return {
+        age: age,
+        referenceYear: referenceYear,
+        possibleBirthYears: [birthYear1, birthYear2],
+        exactBirthYear: `Age ${age} in ${referenceYear} = born in ${birthYear1} or ${birthYear2}`,
+        birthYearRange: `${birthYear2}-${birthYear1}`,
+        currentAgeInCurrentYear: referenceYear === new Date().getFullYear() ?
+            `Currently ${new Date().getFullYear() - birthYear1} or ${new Date().getFullYear() - birthYear2} years old` :
+            `Would be ${new Date().getFullYear() - birthYear1} or ${new Date().getFullYear() - birthYear2} in current year`,
+        type: 'from_age'
+    };
+}
+
+displayAgeResults(result, resultsDiv) {
+    let html = '<div style="font-weight: bold; margin-bottom: 5px;">Age Calculation Results:</div>';
+
+    if (result.type === 'from_age') {
+        // Display results for age number input
+        html += `<div><strong>Input:</strong> Age ${result.age} in ${result.referenceYear}</div>`;
+        html += `<div><strong>Possible Birth Years:</strong> ${result.birthYearRange}</div>`;
+        html += `<div style="margin-top: 8px;"><strong>Details:</strong></div>`;
+        html += `<div style="margin-left: 10px;">`;
+        html += `<div>• Born in ${result.possibleBirthYears[0]} = ${result.referenceYear - result.possibleBirthYears[0]} years old in ${result.referenceYear}</div>`;
+        html += `<div>• Born in ${result.possibleBirthYears[1]} = ${result.referenceYear - result.possibleBirthYears[1]} years old in ${result.referenceYear}</div>`;
+        html += `</div>`;
+
+        if (result.referenceYear === new Date().getFullYear()) {
+            html += `<div style="margin-top: 8px; color: #27ae60;"><strong>Current Status:</strong> ${result.currentAgeInCurrentYear}</div>`;
+        }
+
+    } else {
+        // Display results for date/year input (existing logic)
+        html += `<div><strong>Exact Age:</strong> ${result.exactAge}</div>`;
+        html += `<div><strong>Years:</strong> ${result.years}</div>`;
+
+        if (!result.estimated) {
+            html += `<div><strong>Months:</strong> ${result.months}</div>`;
+            html += `<div><strong>Days:</strong> ${result.days}</div>`;
+        }
+
+        html += `<div style="margin-top: 5px;">`;
+        html += `<span style="color: ${result.isAdult ? '#27ae60' : '#e74c3c'};">${result.isAdult ? '✓ Adult' : '✗ Minor'}</span>`;
+        html += ` | <span style="color: ${result.isSenior ? '#e67e22' : '#666'}">${result.isSenior ? '✓ Senior' : 'Not Senior'}</span>`;
+        html += `</div>`;
+
+        if (result.estimated) {
+            html += `<div style="margin-top: 5px; font-size: 10px; color: #f39c12;">Note: This is an estimate based on year only</div>`;
+        }
+    }
+
+    // Add quick actions for birth year searches
+    if (result.possibleBirthYears) {
+        html += `<div style="margin-top: 10px; padding: 8px; background: #d5f4f1; border-radius: 3px;">`;
+        html += `<div style="font-weight: bold; margin-bottom: 5px;">Quick Search Suggestions:</div>`;
+        result.possibleBirthYears.forEach(year => {
+            html += `<div style="font-size: 10px;">• Search for people born in ${year}</div>`;
+        });
+        html += `</div>`;
+    }
+
+    resultsDiv.innerHTML = html;
+}
 
         saveVoterResult(voterInfo, voterData) {
             try {
