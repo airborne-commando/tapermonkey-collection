@@ -238,7 +238,7 @@ Make the GUI look more clean perhaps?
 
 [universal-search.js](./SCRIPTS/universal-search.js)
 
-[pavoter-tapetmonkey.js](./SCRIPTS/pavoter-tapetmonkey.js)
+[pavoter-bulk.js](./SCRIPTS/pavoter-bulk.js)
 
 ---
 
