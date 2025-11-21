@@ -207,20 +207,21 @@ Use this when dealing with a CAPTCHA, how would you know? if the error sign isn'
 
 Usage for **Vote.org API Check(universal-search.js):**
 
-Input:<br>
-First, last name<br>
-Address: home address street, city, state zip.<br>
-Only unique value is: yyyy
+**Input:**
 
-The year is the only value that matters.
+    First, last name
+    Address: home address street, city, state zip.
+    Only unique value is: yyyy
 
-Result:<br>
-✓ REGISTERED TO VOTE<br>
-Name: John Doe<br>
-Address: 17201 Elite 1337, city, anywhere 0000.<br>
-Status: Registered to Vote
+**The year is the only value that matters.**
 
-API request successful
+**Result:**
+
+    ✓ REGISTERED TO VOTE
+    Name: John Doe
+    Address: 17201 Elite 1337, city, anywhere 0000.
+    Status: Registered to Vote
+    API request successful
 
 -----
 
