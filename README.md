@@ -1,9 +1,7 @@
 # Main repo for tapermonkey scripts for simple OSINT.
 
 You'll find the collection of tapermonkey scripts
-This repo contains all the scripts that can be used for base level osint (or advanced)
-
-# Main repo for tapermonkey scripts for simple OSINT.
+This repo contains all the scripts that can be used for base level osint (or advanced).
 
 # Google Dorking Assistant
 
