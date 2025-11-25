@@ -41651,19 +41651,16 @@
         async captureResults(record) {
             const notFoundMsg = document.getElementById('ctl00_ContentPlaceHolder1_lblNotFound');
 
-            let resultText = 'No results found';
-            let status = 'not_found';
+            let status = 'No results found';
             let isActiveVoter = false;
 
             if (notFoundMsg && notFoundMsg.textContent.includes('not return any results')) {
-                resultText = 'Voter registration not found';
-                status = 'not_found';
+                status = 'Voter registration not found';
             } else {
                 // Look for the voter information section
                 const voterInfo = this.extractVoterInformation();
                 if (voterInfo) {
-                    resultText = voterInfo;
-                    status = 'found';
+                    status = voterInfo;
 
                     // Check if this is an ACTIVE voter
                     if (voterInfo.includes('VOTER RECORD DETAILS') && voterInfo.includes('Status:') && voterInfo.includes('ACTIVE')) {
@@ -41672,17 +41669,16 @@
                         this.stop(); // Stop the script
                     }
                 } else {
-                    resultText = 'Voter information not found on page';
-                    status = 'not_found';
+                    status = 'Voter information not found on page';
                 }
             }
 
             return {
                 ...record,
-                result: resultText,
+                // result: resultText,
                 status: status,
-                isActive: isActiveVoter,
-                timestamp: new Date().toISOString()
+                isActive: isActiveVoter
+                // timestamp: new Date().toISOString()
             };
         }
 
@@ -41982,7 +41978,8 @@
         convertToCSV(data) {
             if (data.length === 0) return '';
 
-            const headers = ['firstName', 'lastName', 'dob', 'zip', 'county', 'status', 'result', 'timestamp'];
+            // const headers = ['firstName', 'lastName', 'dob', 'zip', 'county', 'status', 'result', 'timestamp'];
+            const headers = ['firstName', 'lastName', 'dob', 'zip', 'county', 'status'];
             const csvRows = [headers.join(',')];
 
             for (const row of data) {
