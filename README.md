@@ -139,7 +139,7 @@ Right click inspect element > storage > cookies > https://www.pavoterservices.pa
 
 Use this when dealing with a CAPTCHA, how would you know? if the error sign isn't showing up.
 
-Should clear for you however automatically since the [recent update](https://github.com/airborne-commando/tampermonkey-collection/commit/5a8efe6fc8b1f0a745b11ee65f7e6bf94e27c9ba)
+Should clear for you however automatically since the [recent update](https://github.com/airborne-commando/tampermonkey-collection/commit/5a8efe6fc8b1f0a745b11ee65f7e6bf94e27c9ba).
 
 ## Example output
 
