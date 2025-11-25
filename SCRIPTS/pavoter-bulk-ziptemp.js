@@ -14,6 +14,9 @@
 // @license      GPL 3.0
 // ==/UserScript==
 
+
+// This script has no zip code functionality, this is just a template.
+
 (function() {
     'use strict';
 

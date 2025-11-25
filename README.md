@@ -204,6 +204,11 @@ Use this when dealing with a CAPTCHA, how would you know? if the error sign isn'
 
 [pavoter-bulk.js](./SCRIPTS/pavoter-bulk.js)
 
+
+**This one has no zip codes, just a base template.**
+
+[pavoter-bulk-ziptemp.js](./SCRIPTS/pavoter-bulk-ziptemp.js)
+
 Usage for **Vote.org API Check(universal-search.js):**
 
 **Input:**
