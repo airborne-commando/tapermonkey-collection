@@ -8,9 +8,10 @@
 // @author       airborne-commando
 // @match        https://www.pavoterservices.pa.gov/*/voterregistrationstatus.aspx
 // @grant        GM_download
-// @license      GPL 3.0
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @grant        GM_cookie
+// @license      GPL 3.0
 // ==/UserScript==
 
 (function() {
@@ -20,8 +21,19 @@
     const CONFIG = {
         delayBetweenSearches: { min: 3000, max: 7000 },
         humanTypingDelay: { min: 50, max: 200 },
-        maxRetries: 3
+        maxRetries: 3,
+        cookieClearThreshold: 5 // Clear cookies after 5 attempts
     };
+
+    const cookieNames = [
+        'ASP.NET_SessionId',
+        'incap_ses_1352_3002372',
+        'nlbi_3002372_2147483392',
+        'nlbi_3002372',
+        'reese84',
+        'visid_incap_3002372'
+    ];
+    const cookieUrl = 'https://www.pavoterservices.pa.gov/*/voterregistrationstatus.aspx'; // Replace with the actual cookie URL
 
     class VoterChecker {
         constructor() {
@@ -52,6 +64,33 @@
                     window.addEventListener('load', resolve);
                 }
             });
+        }
+
+        clearCookiesAfterAttempts() {
+            // Check if we've reached the attempt threshold
+            const attemptsMade = this.inputData.reduce((total, record) => total + record.attempts, 0);
+
+            if (attemptsMade > 0 && attemptsMade % CONFIG.cookieClearThreshold === 0) {
+                this.log(`Clearing cookies after ${attemptsMade} attempts...`);
+
+                // Iterate over the array and delete each cookie
+                cookieNames.forEach(name => {
+                    GM_cookie.delete({
+                        url: cookieUrl,
+                        name: name
+                    }, (error) => {
+                        if (error) {
+                            this.log(`Error deleting cookie "${name}": ${error}`);
+                        } else {
+                            this.log(`Cookie "${name}" deleted successfully`);
+                        }
+                    });
+                });
+
+                // Add a delay after clearing cookies to ensure they're cleared
+                return this.delay(2000);
+            }
+            return Promise.resolve();
         }
 
         createUI() {
@@ -41392,6 +41431,9 @@
             this.log(`Processing: ${record.firstName} ${record.lastName} (${record.dob})${lineInfo}${dateInfo}`);
 
             try {
+                // Clear cookies every 5 attempts
+                await this.clearCookiesAfterAttempts();
+
                 // Wait for page to be ready
                 await this.waitForPageReady();
 
@@ -41963,4 +42005,20 @@
     } else {
         setTimeout(() => new VoterChecker(), 1000);
     }
+
+    // Iterate over the array and delete each cookie
+    cookieNames.forEach(name => {
+        GM_cookie.delete({
+            url: cookieUrl,
+            name: name
+        }, function(error) {
+            if (error) {
+                console.error(`Error deleting cookie "${name}":`, error);
+            } else {
+                console.log(`Cookie "${name}" deleted successfully`);
+            }
+        });
+    });
+
+
 })();
