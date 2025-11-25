@@ -41196,10 +41196,13 @@
             const progressElement = document.getElementById('progressInfo');
             if (this.inputData.length > 0 && this.currentIndex < this.inputData.length) {
                 const currentRecord = this.inputData[this.currentIndex];
+                const lineInfo = currentRecord.originalLine ? ` (Line ${currentRecord.originalLine})` : '';
+                const dateInfo = currentRecord.isGeneratedDate ? ` [Date variation]` : '';
+
                 progressElement.innerHTML = `
                     <div>Status: ${this.isRunning ? 'Running' : 'Paused'}</div>
                     <div>Progress: ${this.currentIndex + 1}/${this.inputData.length}</div>
-                    <div>Current: ${currentRecord.firstName} ${currentRecord.lastName}</div>
+                    <div>Current: ${currentRecord.firstName} ${currentRecord.lastName}${lineInfo}${dateInfo}</div>
                 `;
             } else {
                 progressElement.innerHTML = `
@@ -41263,11 +41266,13 @@
                                     lastName,
                                     dob: newDob,
                                     attempts: 0,
-                                    success: false
+                                    success: false,
+                                    originalLine: i + 1, // Track which line this came from
+                                    isGeneratedDate: true // Flag for generated dates
                                 });
                                 validCount++;
                             }
-                            this.log(`Generated ${daysInMonth} dates for ${firstName} ${lastName} (month ${month})`);
+                            this.log(`Generated ${daysInMonth} date variations for line ${i + 1}: ${firstName} ${lastName} (month ${month})`);
                         }
                         // Handle normal dates
                         else if (this.isValidDate(dob)) {
@@ -41279,16 +41284,21 @@
                                 lastName,
                                 dob,
                                 attempts: 0,
-                                success: false
+                                success: false,
+                                originalLine: i + 1, // Track which line this came from
+                                isGeneratedDate: false // Not a generated date
                             });
                             validCount++;
+                            this.log(`Loaded record from line ${i + 1}: ${firstName} ${lastName} (${dob})`);
                         } else {
-                            this.log(`Skipping invalid date: ${dob} for ${firstName} ${lastName}`);
+                            this.log(`Skipping invalid date on line ${i + 1}: ${dob} for ${firstName} ${lastName}`);
                         }
+                    } else {
+                        this.log(`Skipping malformed line ${i + 1}: ${line}`);
                     }
                 }
 
-                this.log(`Loaded ${validCount} valid records from ${lines.length} lines`);
+                this.log(`Loaded ${validCount} total records from ${lines.length} input lines`);
                 this.updateProgress();
             } catch (error) {
                 this.log(`Error parsing file: ${error}`);
@@ -41370,11 +41380,16 @@
             }
         }
 
+
         async processCurrentRecord() {
             const record = this.inputData[this.currentIndex];
             this.updateProgress();
 
-            this.log(`Processing: ${record.firstName} ${record.lastName} (${record.dob})`);
+            // Show original line number in log for better tracking
+            const lineInfo = record.originalLine ? ` (from input line ${record.originalLine})` : '';
+            const dateInfo = record.isGeneratedDate ? ` [date variation: ${record.dob}]` : '';
+
+            this.log(`Processing: ${record.firstName} ${record.lastName} (${record.dob})${lineInfo}${dateInfo}`);
 
             try {
                 // Wait for page to be ready
@@ -41398,10 +41413,10 @@
                 record.success = true;
                 record.attempts++;
 
-                this.log(`✓ Success: ${record.firstName} ${record.lastName}`);
+                this.log(`✓ Success: ${record.firstName} ${record.lastName}${lineInfo}${dateInfo}`);
 
             } catch (error) {
-                this.log(`✗ Error processing ${record.firstName} ${record.lastName}: ${error}`);
+                this.log(`✗ Error processing ${record.firstName} ${record.lastName}${lineInfo}${dateInfo}: ${error}`);
                 record.success = false;
                 record.attempts++;
 
