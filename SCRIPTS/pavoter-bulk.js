@@ -41274,6 +41274,7 @@
             });
         }
 
+        // Update the parseInputData method to handle month names
         parseInputData(text) {
             try {
                 const lines = text.split('\n').filter(line => line.trim());
@@ -41288,9 +41289,17 @@
                     if (parts.length === 4) {
                         const [zip, firstName, lastName, dob] = parts.map(part => part.trim());
 
+                        // Convert month names to numbers if needed
+                        const normalizedDob = this.normalizeDate(dob);
+                        
+                        if (!normalizedDob) {
+                            this.log(`Skipping invalid date format on line ${i + 1}: ${dob} for ${firstName} ${lastName}`);
+                            continue;
+                        }
+
                         // Handle dates with "00" as day - generate all days for that month
-                        if (dob.includes('/00/')) {
-                            const [month, , year] = dob.split('/').map(Number);
+                        if (normalizedDob.includes('/00/')) {
+                            const [month, , year] = normalizedDob.split('/').map(Number);
                             const daysInMonth = this.getDaysInMonth(month, year);
 
                             for (let day = 1; day <= daysInMonth; day++) {
@@ -41306,29 +41315,29 @@
                                     dob: newDob,
                                     attempts: 0,
                                     success: false,
-                                    originalLine: i + 1, // Track which line this came from
-                                    isGeneratedDate: true // Flag for generated dates
+                                    originalLine: i + 1,
+                                    isGeneratedDate: true
                                 });
                                 validCount++;
                             }
                             this.log(`Generated ${daysInMonth} date variations for line ${i + 1}: ${firstName} ${lastName} (month ${month})`);
                         }
                         // Handle normal dates
-                        else if (this.isValidDate(dob)) {
+                        else if (this.isValidDate(normalizedDob)) {
                             const county = this.getCountyFromZip(zip);
                             this.inputData.push({
                                 zip,
                                 county,
                                 firstName,
                                 lastName,
-                                dob,
+                                dob: normalizedDob,
                                 attempts: 0,
                                 success: false,
-                                originalLine: i + 1, // Track which line this came from
-                                isGeneratedDate: false // Not a generated date
+                                originalLine: i + 1,
+                                isGeneratedDate: false
                             });
                             validCount++;
-                            this.log(`Loaded record from line ${i + 1}: ${firstName} ${lastName} (${dob})`);
+                            this.log(`Loaded record from line ${i + 1}: ${firstName} ${lastName} (${normalizedDob})`);
                         } else {
                             this.log(`Skipping invalid date on line ${i + 1}: ${dob} for ${firstName} ${lastName}`);
                         }
@@ -41344,17 +41353,68 @@
             }
         }
 
+        // Add this method to normalize dates with month names
+        normalizeDate(dateString) {
+            const monthMap = {
+                'january': '01', 'jan': '01',
+                'february': '02', 'feb': '02',
+                'march': '03', 'mar': '03',
+                'april': '04', 'apr': '04',
+                'may': '05',
+                'june': '06', 'jun': '06',
+                'july': '07', 'jul': '07',
+                'august': '08', 'aug': '08',
+                'september': '09', 'sep': '09',
+                'october': '10', 'oct': '10',
+                'november': '11', 'nov': '11',
+                'december': '12', 'dec': '12'
+            };
+
+            // Check if it's already in mm/dd/yyyy format
+            const numericPattern = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+            if (numericPattern.test(dateString)) {
+                return dateString;
+            }
+
+            // Try to parse month names
+            const parts = dateString.split('/');
+            if (parts.length === 3) {
+                let [month, day, year] = parts;
+                
+                // Convert month name to number
+                if (isNaN(parseInt(month))) {
+                    const monthLower = month.toLowerCase().trim();
+                    if (monthMap[monthLower]) {
+                        month = monthMap[monthLower];
+                    } else {
+                        return null; // Invalid month name
+                    }
+                }
+                
+                // Ensure proper formatting
+                month = month.padStart(2, '0');
+                day = day.padStart(2, '0');
+                
+                return `${month}/${day}/${year}`;
+            }
+            
+            return null; // Invalid format
+        }
+
         // Add helper method to get days in month
         getDaysInMonth(month, year) {
             return new Date(year, month, 0).getDate();
         }
 
-        // Update isValidDate to handle "00" as day
+        // Update isValidDate to use normalized dates
         isValidDate(dateString) {
-            const pattern = /^\d{2}\/\d{2}\/\d{4}$/;
-            if (!pattern.test(dateString)) return false;
+            const normalizedDate = this.normalizeDate(dateString);
+            if (!normalizedDate) return false;
 
-            const [month, day, year] = dateString.split('/').map(Number);
+            const pattern = /^\d{2}\/\d{2}\/\d{4}$/;
+            if (!pattern.test(normalizedDate)) return false;
+
+            const [month, day, year] = normalizedDate.split('/').map(Number);
 
             // Allow "00" as day (will be handled in parseInputData)
             if (day === 0) return true;
