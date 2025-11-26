@@ -43671,7 +43671,7 @@ createUI() {
         <a href="https://www.fastbackgroundcheck.com" target="_blank" style="color: #3498db; text-decoration: none; padding: 3px 6px; border: 1px solid #3498db; border-radius: 3px;">FastBackgroundCheck</a>
         <a href="https://www.fastpeoplesearch.com" target="_blank" style="color: #27ae60; text-decoration: none; padding: 3px 6px; border: 1px solid #27ae60; border-radius: 3px;">FastPeopleSearch</a>
         <a href="https://www.zabasearch.com" target="_blank" style="color: #f39c12; text-decoration: none; padding: 3px 6px; border: 1px solid #f39c12; border-radius: 3px;">ZabaSearch</a>
-        <a href="https://www.whitepages.com" target="_blank" style="color: #d6c5a9; text-decoration: none; padding: 3px 6px; border: 1px solid #d6c5a9; border-radius: 3px;">Whitepages</a>
+        <a href="https://www.whitepages.com" target="_blank" style="color: #879ced; text-decoration: none; padding: 3px 6px; border: 1px solid #879ced; border-radius: 3px;">Whitepages</a>
         <a href="https://verify.vote.org/" target="_blank" style="color: #9b59b6; text-decoration: none; padding: 3px 6px; border: 1px solid #9b59b6; border-radius: 3px;">Vote.org</a>
     `;
     header.appendChild(navLinks);
@@ -43842,7 +43842,7 @@ createUI() {
             <a href="https://www.fastbackgroundcheck.com" target="_blank" style="color: #3498db; margin: 0 5px;">FBC</a> •
             <a href="https://www.fastpeoplesearch.com" target="_blank" style="color: #27ae60; margin: 0 5px;">FPS</a> •
             <a href="https://www.zabasearch.com" target="_blank" style="color: #f39c12; margin: 0 5px;">Zaba</a> •
-            <a href="https://www.whitepages.com" target="_blank" style="color: #d6c5a9; margin: 0 5px;">Whitepages</a> •
+            <a href="https://www.whitepages.com" target="_blank" style="color: #879ced; margin: 0 5px;">Whitepages</a> •
             <a href="https://verify.vote.org/" target="_blank" style="color: #9b59b6; margin: 0 5px;">Vote</a>
         </div>
     `;
