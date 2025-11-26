@@ -3,9 +3,10 @@
 // @namespace    http://tampermonkey.net/
 // @updateURL    https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
 // @downloadURL  https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/universal-search.js
-// @version      2.2.7
+// @version      2.2.8
 // @description  Export results from multiple background check sites: FastBackgroundCheck, FastPeopleSearch, ZabaSearch, and Vote.org with API integration
 // @author       airborne-commando
+// @match        https://www.whitepages.com/*
 // @match        https://www.fastbackgroundcheck.com/*
 // @match        https://fastbackgroundcheck.com/*
 // @match        https://www.fastpeoplesearch.com/*
@@ -86,6 +87,16 @@
                 .replace(/^-|-$/g, '');
         }
 
+    // Search Utility Class
+        static formatNameForWP(name) {
+            // For FPS and FBC: replace spaces with hyphens but keep existing hyphens
+            return name.toLowerCase()
+                .trim()
+                .replace(/\s+/g, '-')
+                .replace(/--+/g, '-')
+                .replace(/^-|-$/g, '');
+        }
+
         static formatNameForZaba(name) {
             // For Zaba: keep hyphens and spaces become hyphens
             return name.toLowerCase()
@@ -128,6 +139,7 @@
         static generateSearchURLs(firstName, lastName, city, state) {
             const fullName = `${firstName} ${lastName}`;
             const formattedNameFPSFBC = this.formatNameForFPSFBC(fullName);
+            const formattedNameWP = this.formatNameForWP(fullName);
             const formattedNameZaba = this.formatNameForZaba(fullName);
             const formattedState = this.formatLocation(state);
             const formattedStateZaba = this.formatStateForZaba(state);
@@ -136,7 +148,8 @@
             const urls = {
                 fastpeoplesearch: [],
                 fastbackgroundcheck: [],
-                zabasearch: []
+                zabasearch: [],
+                whitepages: []
             };
 
             // FastPeopleSearch URLs
@@ -160,6 +173,13 @@
             }
             // Always include state-only search for Zaba
             urls.zabasearch.push(`https://www.zabasearch.com/people/${formattedNameZaba}/${formattedStateZaba}/`);
+
+            // whitepages URLs
+            if (formattedCityState) {
+                urls.whitepages.push(`https://www.whitepages.com/name/${formattedNameWP}/${formattedCityState}`);
+            }
+            // Always include state-only search for FPS
+            urls.whitepages.push(`https://www.whitepages.com/name/${formattedNameWP}/${formattedState}`);
 
             return urls;
         }
@@ -43540,6 +43560,7 @@ loadZipMapping() {
             if (url.includes('fastbackgroundcheck.com')) return 'fastbackgroundcheck';
             if (url.includes('fastpeoplesearch.com')) return 'fastpeoplesearch';
             if (url.includes('zabasearch.com')) return 'zabasearch';
+            // if (url.includes('whitepages.com')) return 'whitepages';
             if (url.includes('verify.vote.org') || url.includes('vote.org')) return 'vote.org';
             return 'unknown';
         }
@@ -43612,6 +43633,7 @@ createUI() {
         'fastbackgroundcheck': 'FastBackgroundCheck',
         'fastpeoplesearch': 'FastPeopleSearch',
         'zabasearch': 'ZabaSearch',
+        // 'whitepages': 'Whitepages',
         'vote.org': 'Vote.org'
     };
     title.textContent = `Universal Exporter v2.2.0 - ${siteNames[this.site] || this.site}`;
@@ -43649,6 +43671,7 @@ createUI() {
         <a href="https://www.fastbackgroundcheck.com" target="_blank" style="color: #3498db; text-decoration: none; padding: 3px 6px; border: 1px solid #3498db; border-radius: 3px;">FastBackgroundCheck</a>
         <a href="https://www.fastpeoplesearch.com" target="_blank" style="color: #27ae60; text-decoration: none; padding: 3px 6px; border: 1px solid #27ae60; border-radius: 3px;">FastPeopleSearch</a>
         <a href="https://www.zabasearch.com" target="_blank" style="color: #f39c12; text-decoration: none; padding: 3px 6px; border: 1px solid #f39c12; border-radius: 3px;">ZabaSearch</a>
+        <a href="https://www.whitepages.com" target="_blank" style="color: #d6c5a9; text-decoration: none; padding: 3px 6px; border: 1px solid #d6c5a9; border-radius: 3px;">Whitepages</a>
         <a href="https://verify.vote.org/" target="_blank" style="color: #9b59b6; text-decoration: none; padding: 3px 6px; border: 1px solid #9b59b6; border-radius: 3px;">Vote.org</a>
     `;
     header.appendChild(navLinks);
@@ -43736,15 +43759,15 @@ createUI() {
         <button id="ubcSavePageBtn" style="background: #3498db; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; grid-column: 1 / -1;">Save Current Page</button>
         <button id="ubcExportBtn" style="background: #27ae60; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">Export Data</button>
         <button id="ubcViewSavedBtn" style="background: #f39c12; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">View Saved</button>
-        <button id="ubcAutofillBtn" style="background: #9b59b6; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">Autofill Form</button>
-
+<!--        <button id="ubcAutofillBtn" style="background: #9b59b6; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">Autofill Form</button> -->
+<!-- <button id="ubcImportBtn" style="background: #e67e22; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">Import Data</button> -->
         <button id="ubcClearBtn" style="background: #e74c3c; color: white; border: none; padding: 12px 8px; border-radius: 6px; cursor: pointer; font-size: 14px;">Clear Data</button>
     ` : `
         <button id="ubcSavePageBtn" style="background: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Save Page</button>
         <button id="ubcExportBtn" style="background: #27ae60; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Export</button>
         <button id="ubcViewSavedBtn" style="background: #f39c12; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">View Saved</button>
-        <button id="ubcAutofillBtn" style="background: #9b59b6; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Autofill</button>
-
+<!--         <button id="ubcAutofillBtn" style="background: #9b59b6; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Autofill</button> -->
+<!--         <button id="ubcImportBtn" style="background: #e67e22; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Import</button> -->
         <button id="ubcClearBtn" style="background: #e74c3c; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; flex: 1;">Clear</button>
     `;
 
@@ -43819,6 +43842,7 @@ createUI() {
             <a href="https://www.fastbackgroundcheck.com" target="_blank" style="color: #3498db; margin: 0 5px;">FBC</a> •
             <a href="https://www.fastpeoplesearch.com" target="_blank" style="color: #27ae60; margin: 0 5px;">FPS</a> •
             <a href="https://www.zabasearch.com" target="_blank" style="color: #f39c12; margin: 0 5px;">Zaba</a> •
+            <a href="https://www.whitepages.com" target="_blank" style="color: #d6c5a9; margin: 0 5px;">Whitepages</a> •
             <a href="https://verify.vote.org/" target="_blank" style="color: #9b59b6; margin: 0 5px;">Vote</a>
         </div>
     `;
@@ -43848,7 +43872,7 @@ createUI() {
     document.getElementById('ubcCheckVoter').onclick = () => this.checkVoterStatus();
     document.getElementById('ubcExportFormat').addEventListener('change', () => this.updatePreview());
     document.getElementById('ubcDataScope').addEventListener('change', () => this.updatePreview());
-    document.getElementById('ubcAutofillBtn').onclick = () => this.autofillForm();
+    // document.getElementById('ubcAutofillBtn').onclick = () => this.autofillForm();
     // Future function
     // document.getElementById('ubcImportBtn').onclick = () => this.importSearchData();
 
@@ -44209,10 +44233,18 @@ displayAgeResults(result, resultsDiv) {
             });
             html += '</div>';
 
+            // Whitepages links
+            html += '<div style="margin-bottom: 8px;">';
+            html += '<strong style="color: #f39c12;">Whitepages:</strong><br>';
+            urls.whitepages.forEach(url => {
+                html += `<a href="${url}" target="_blank" style="color: #f39c12; font-size: 10px; display: block; margin: 2px 0; word-break: break-all;">${url}</a>`;
+            });
+            html += '</div>';
+
             resultsDiv.innerHTML = html;
             resultsDiv.style.display = 'block';
 
-            this.log(`Generated ${urls.fastpeoplesearch.length + urls.fastbackgroundcheck.length + urls.zabasearch.length} search links`);
+            this.log(`Generated ${urls.fastpeoplesearch.length + urls.fastbackgroundcheck.length + urls.zabasearch.length + urls.whitepages.length} search links`);
         }
 
         log(message) {
@@ -44263,6 +44295,7 @@ displayAgeResults(result, resultsDiv) {
                 'fastbackgroundcheck': 'FastBackgroundCheck',
                 'fastpeoplesearch': 'FastPeopleSearch',
                 'zabasearch': 'ZabaSearch',
+                // 'whitepages': 'Whitepages',
                 'vote.org': 'Vote.org'
             };
             return siteNames[this.site] || this.site;
