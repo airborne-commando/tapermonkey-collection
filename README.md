@@ -157,6 +157,8 @@ you may also need to edit the values for
 
 [pa-zip-mapping.js](./SCRIPTS/pa-zip-mapping.js) if no results are showing up.
 
+**CAUTION this contains a bunch of zip data! you better know what you are doing!**
+
 ## Example output
 
 
