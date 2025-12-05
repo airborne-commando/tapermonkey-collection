@@ -5390,7 +5390,7 @@
     '15065': 'Allegheny',
     '15066': 'Beaver',
     '15067': 'Washington',
-    '15068': 'Westmoreland',
+    '15068': 'Allegheny',
     '15069': 'Westmoreland',
     '15071': 'Allegheny',
     '15072': 'Westmoreland',
