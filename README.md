@@ -1,6 +1,6 @@
-# Main repo for tapermonkey scripts for simple OSINT.
+# Main repo for tampermonkey scripts for simple OSINT.
 
-Inside this repo You'll find a collection of tapermonkey scripts for either basic or advanced OSINT.
+Inside this repo You'll find a collection of tampermonkey scripts for either basic or advanced OSINT.
 
 # Google Dorking Assistant
 
@@ -100,7 +100,7 @@ Can only do one page each, comes with hyperlinks.
 Also has the option to check ones voter status thoughout the states (less advanced, can't check political demographic).
 
 ## How to use:
-- Install tapermonkey/greasemonkey
+- Install tampermonkey/greasemonkey
 - copy paste this script
 - ???
 - profit
@@ -111,7 +111,7 @@ The voter extraction tool that is linked here is pretty lite, it isn't accurate 
 
 ---
 
-## Voter reg status: Tapermonkey edition
+## Voter reg status: tampermonkey edition
 
 Due to chrome driver being blocked, this would probably be the better solution!
 
