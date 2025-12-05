@@ -153,6 +153,10 @@ Use this when dealing with a CAPTCHA, how would you know? if the error sign isn'
 
 Should clear for you however automatically since the [recent update](https://github.com/airborne-commando/tampermonkey-collection/commit/5a8efe6fc8b1f0a745b11ee65f7e6bf94e27c9ba).
 
+you may also need to edit the values for 
+
+[pa-zip-mapping.js](./SCRIPTS/pa-zip-mapping.js) if no results are showing up.
+
 ## Example output
 
 
@@ -216,7 +220,7 @@ Should clear for you however automatically since the [recent update](https://git
 
 [universal-search.js](./SCRIPTS/universal-search.js)
 
-[pavoter-bulk-dev.js](./SCRIPTS/pavoter-bulk.js)
+[pavoter-bulk.js](./SCRIPTS/pavoter-bulk.js)
 
 **Zip file**
 [pa-zip-mapping.js](./SCRIPTS/pa-zip-mapping.js)
