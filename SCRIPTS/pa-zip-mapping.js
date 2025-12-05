@@ -7,6 +7,10 @@
 // @grant        none
 // ==/UserScript==
 
+// The number 15068 most commonly refers to the
+// ZIP code for New Kensington, Pennsylvania, covering parts of Westmoreland County, including Lower Burrell and Arnold, near Pittsburgh.
+// Seeing how it's near pittsburgh it may overlap, so it's best to verify the data you are collecting.
+
 (function() {
     'use strict';
 
