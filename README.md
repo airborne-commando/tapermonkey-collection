@@ -155,7 +155,7 @@ Should clear for you however automatically since the [recent update](https://git
 
 you may also need to edit the values for 
 
-[pa-zip-mapping.js](./SCRIPTS/pa-zip-mapping.js) if no results are showing up.
+[pa-zip-mapping.js](./SCRIPTS/zip-data.js) if no results are showing up.
 
 **CAUTION this contains a bunch of zip data! you better know what you are doing!**
 
@@ -225,7 +225,7 @@ you may also need to edit the values for
 [pavoter-bulk.js](./SCRIPTS/pavoter-bulk.js)
 
 **Zip file**
-[pa-zip-mapping.js](./SCRIPTS/pa-zip-mapping.js)
+[pa-zip-mapping.js](./SCRIPTS/zip-data.js)
 
 
 **This one has no zip codes, just a base template.**
