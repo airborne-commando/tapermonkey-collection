@@ -135,6 +135,12 @@ ZIP,FirstName,LastName,DOB-DOB
 
 DOB-DOB Will turn into a next year for that month.
 
+**If the script doesn't work**
+
+Reload the page
+
+***If it still doesn't work***
+
 ## Firefox
 
 Right click inspect element > storage > cookies > https://www.pavoterservices.pa.gov > Delete all session cookies
