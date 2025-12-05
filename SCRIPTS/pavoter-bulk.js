@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         PA Voter Registration Bulk Checker
 // @namespace    http://tampermonkey.net/
-// @updateURL    https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/pavoter-bulk.js
-// @downloadURL  https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/pavoter-bulk.js
-// @version      1.8.2
-// @description  Bulk check voter registration status in PA with complete ZIP code mapping, added direct input option
+// @updateURL    https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/dev/SCRIPTS/pavoter-bulk.js
+// @downloadURL  https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/dev/SCRIPTS/pavoter-bulk.js
+// @version      1.8.3
+// @description  Bulk check voter registration status in PA with complete ZIP code mapping, added direct input option with year range support
 // @author       airborne-commando
 // @match        https://www.pavoterservices.pa.gov/*/voterregistrationstatus.aspx
-// @require      https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/pa-zip-mapping.js
+// @require      https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/dev/SCRIPTS/pa-zip-mapping.js
 // @grant        GM_download
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -139,7 +139,7 @@
                     position: fixed;
                     top: 20px;
                     right: 20px;
-                    width: 420px;
+                    width: 450px;
                     background: white;
                     border: 2px solid #333;
                     border-radius: 8px;
@@ -154,7 +154,7 @@
 
             // Header
             const header = document.createElement('h3');
-            header.textContent = `PA Voter Bulk Checker v1.8.2 ${this.isMobile ? '(Mobile)' : '(Desktop)'}`;
+            header.textContent = `PA Voter Bulk Checker v1.8.3 ${this.isMobile ? '(Mobile)' : '(Desktop)'}`;
             header.style.cssText = 'margin-top: 0; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: ' + (this.isMobile ? '16px' : '18px') + ';';
 
             // Input Method Tabs
@@ -180,7 +180,7 @@
             fileSection.innerHTML = `
                 <label style="display: block; margin-bottom: 8px; font-weight: bold; font-size: ${this.isMobile ? '14px' : '16px'};">Upload CSV/TXT File:</label>
                 <input type="file" id="voterFile" accept=".csv,.txt" style="margin-bottom: 10px; width: 100%; font-size: ${this.isMobile ? '14px' : '16px'};">
-                <small style="color: #666; font-size: ${this.isMobile ? '12px' : '14px'};">Format: ZIP,FirstName,LastName,DOB (MM/DD/YYYY)</small>
+                <small style="color: #666; font-size: ${this.isMobile ? '12px' : '14px'};">Format: ZIP,FirstName,LastName,DOB (MM/DD/YYYY or month/00/YYYY)</small>
             `;
 
             // Direct Input Section (initially hidden)
@@ -189,10 +189,27 @@
             directSection.style.display = 'none';
             directSection.innerHTML = `
                 <label style="display: block; margin-bottom: 8px; font-weight: bold; font-size: ${this.isMobile ? '14px' : '16px'};">Direct Input:</label>
+<<<<<<< HEAD
                 <label style="display: block; margin-bottom: 8px; font-size: ${this.isMobile ? '14px' : '16px'};">ZIP,First,LastName,DOB MM/DD/YYYY</label>
                 <textarea id="directInput" rows="5" placeholder="Enter one voter per line&#10;Format: ZIP,FirstName,LastName,DOB&#10;Example: 19001,John,Smith,01/15/1985&#10;19002,Jane,Doe,02/28/1990" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: ${this.isMobile ? '14px' : '14px'}; margin-bottom: 10px;"></textarea>
+=======
+                <label style="display: block; margin-bottom: 4px; font-size: ${this.isMobile ? '12px' : '13px'};">Format: ZIP,FirstName,LastName,DOB</label>
+                <small style="color: #666; display: block; margin-bottom: 8px; font-size: ${this.isMobile ? '11px' : '12px'};">DOB can be: MM/DD/YYYY, month/00/YYYY, or month/00/YYYY-YYYY</small>
+                <textarea id="directInput" rows="4" placeholder="Enter one voter per line&#10;Examples:&#10;19001,John,Smith,01/15/1985&#10;19002,Jane,Doe,Jan/00/1975&#10;19003,Bob,Johnson,January/00/1980-1985&#10;19004,Alice,Brown,03/00/1990-1992" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: ${this.isMobile ? '14px' : '14px'}; margin-bottom: 10px;"></textarea>
+
+                <div style="margin-bottom: 10px; padding: 8px; background: #f8f9fa; border-radius: 4px; border: 1px solid #dee2e6;">
+                    <div style="font-weight: bold; margin-bottom: 4px; font-size: ${this.isMobile ? '13px' : '14px'};">Year Range Examples:</div>
+                    <div style="font-size: ${this.isMobile ? '11px' : '12px'}; color: #666;">
+                        <div>• <code>Jan/00/1961-1964</code> → 4 years (Jan 1961 - Jan 1964)</div>
+                        <div>• <code>03/00/1990-1992</code> → 3 years (Mar 1990 - Mar 1992)</div>
+                        <div>• <code>July/00/1978-1978</code> → Single year (July 1978)</div>
+                        <div>• <code>December/00/2000-2001</code> → 2 years (Dec 2000 - Dec 2001)</div>
+                    </div>
+                </div>
+
+>>>>>>> 1086c3a (	new file:   SCRIPTS/pa-zip-mapping.js)
                 <button id="loadDirectBtn" style="background: #9b59b6; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; width: 100%; margin-bottom: 10px; font-size: ${this.isMobile ? '14px' : '14px'};">Load Direct Input</button>
-                <small style="color: #666; font-size: ${this.isMobile ? '12px' : '14px'};">Separate entries with new lines. DOB can be MM/DD/YYYY or month names (Jan, January, etc.)</small>
+                <small style="color: #666; font-size: ${this.isMobile ? '11px' : '12px'};">Note: Year range expansion works for month/00/YYYY-YYYY format only</small>
             `;
 
             // ZIP Mapping Status
@@ -416,12 +433,13 @@
             });
         }
 
-        // Update the parseInputData method to handle month names
+        // Enhanced parseInputData method to handle year ranges
         parseInputData(text, source) {
             try {
                 const lines = text.split('\n').filter(line => line.trim());
                 this.inputData = [];
                 let validCount = 0;
+                let yearRangeExpansions = 0;
 
                 for (let i = 0; i < lines.length; i++) {
                     const line = lines[i].trim();
@@ -431,70 +449,132 @@
                     if (parts.length === 4) {
                         const [zip, firstName, lastName, dob] = parts.map(part => part.trim());
 
-                        // Convert month names to numbers if needed
-                        const normalizedDob = this.normalizeDate(dob);
+                        // Check if this is a year range (format: month/00/YYYY-YYYY)
+                        const yearRangeMatch = dob.match(/^(.+?)\/(\d{1,2})\/(\d{4})-(\d{4})$/);
 
-                        if (!normalizedDob) {
-                            this.log(`Skipping invalid date format on line ${i + 1}: ${dob} for ${firstName} ${lastName}`);
-                            continue;
-                        }
+                        if (yearRangeMatch) {
+                            const [, month, day, startYear, endYear] = yearRangeMatch;
 
-                        // Handle dates with "00" as day - generate all days for that month
-                        if (normalizedDob.includes('/00/')) {
-                            const [month, , year] = normalizedDob.split('/').map(Number);
-                            const daysInMonth = this.getDaysInMonth(month, year);
+                            // Convert to numbers
+                            const startYearNum = parseInt(startYear);
+                            const endYearNum = parseInt(endYear);
 
-                            for (let day = 1; day <= daysInMonth; day++) {
-                                const formattedDay = day.toString().padStart(2, '0');
-                                const newDob = `${month.toString().padStart(2, '0')}/${formattedDay}/${year}`;
-
-                                const county = this.getCountyFromZip(zip);
-                                this.inputData.push({
-                                    zip,
-                                    county,
-                                    firstName,
-                                    lastName,
-                                    dob: newDob,
-                                    attempts: 0,
-                                    success: false,
-                                    originalLine: i + 1,
-                                    isGeneratedDate: true,
-                                    source: source
-                                });
-                                validCount++;
+                            if (startYearNum > endYearNum) {
+                                this.log(`Invalid year range on line ${i + 1}: ${dob} (start year > end year)`);
+                                continue;
                             }
-                            this.log(`Generated ${daysInMonth} date variations for line ${i + 1}: ${firstName} ${lastName} (month ${month})`);
+
+                            // Process each year in the range
+                            for (let year = startYearNum; year <= endYearNum; year++) {
+                                const newDob = `${month}/${day}/${year}`;
+                                const normalizedDob = this.normalizeDate(newDob);
+
+                                if (!normalizedDob) {
+                                    this.log(`Skipping invalid date in range on line ${i + 1}: ${newDob}`);
+                                    continue;
+                                }
+
+                                // Handle dates with "00" as day
+                                const expandedRecords = this.processDateWithZeroDay(zip, firstName, lastName, normalizedDob, i, source);
+
+                                if (expandedRecords.length > 0) {
+                                    this.inputData.push(...expandedRecords);
+                                    validCount += expandedRecords.length;
+                                    if (expandedRecords.length > 1) {
+                                        yearRangeExpansions++;
+                                    }
+                                }
+                            }
+
+                            if (endYearNum - startYearNum + 1 > 1) {
+                                this.log(`Expanded year range on line ${i + 1}: ${dob} → ${endYearNum - startYearNum + 1} years for ${firstName} ${lastName}`);
+                            }
                         }
-                        // Handle normal dates
-                        else if (this.isValidDate(normalizedDob)) {
-                            const county = this.getCountyFromZip(zip);
-                            this.inputData.push({
-                                zip,
-                                county,
-                                firstName,
-                                lastName,
-                                dob: normalizedDob,
-                                attempts: 0,
-                                success: false,
-                                originalLine: i + 1,
-                                isGeneratedDate: false,
-                                source: source
-                            });
-                            validCount++;
-                            this.log(`Loaded record from line ${i + 1}: ${firstName} ${lastName} (${normalizedDob})`);
-                        } else {
-                            this.log(`Skipping invalid date on line ${i + 1}: ${dob} for ${firstName} ${lastName}`);
+                        // Handle single date (could be with or without 00)
+                        else {
+                            const normalizedDob = this.normalizeDate(dob);
+
+                            if (!normalizedDob) {
+                                this.log(`Skipping invalid date format on line ${i + 1}: ${dob} for ${firstName} ${lastName}`);
+                                continue;
+                            }
+
+                            // Handle dates with "00" as day
+                            const expandedRecords = this.processDateWithZeroDay(zip, firstName, lastName, normalizedDob, i, source);
+
+                            if (expandedRecords.length > 0) {
+                                this.inputData.push(...expandedRecords);
+                                validCount += expandedRecords.length;
+                            }
                         }
                     } else {
                         this.log(`Skipping malformed line ${i + 1}: ${line}`);
                     }
                 }
 
+                const totalExpansions = this.inputData.filter(r => r.isGeneratedDate).length;
                 this.log(`Loaded ${validCount} total records from ${lines.length} ${source} lines`);
+                if (yearRangeExpansions > 0) {
+                    this.log(`Expanded ${yearRangeExpansions} year range entries`);
+                }
+                if (totalExpansions > 0) {
+                    this.log(`Generated ${totalExpansions} date variations for month searches`);
+                }
                 this.updateProgress();
             } catch (error) {
                 this.log(`Error parsing ${source} data: ${error}`);
             }
+        }
+
+        processDateWithZeroDay(zip, firstName, lastName, dob, lineIndex, source) {
+            const records = [];
+
+            // Handle dates with "00" as day - generate all days for that month
+            if (dob.includes('/00/')) {
+                const [month, , year] = dob.split('/').map(Number);
+                const daysInMonth = this.getDaysInMonth(month, year);
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const formattedDay = day.toString().padStart(2, '0');
+                    const newDob = `${month.toString().padStart(2, '0')}/${formattedDay}/${year}`;
+
+                    const county = this.getCountyFromZip(zip);
+                    records.push({
+                        zip,
+                        county,
+                        firstName,
+                        lastName,
+                        dob: newDob,
+                        attempts: 0,
+                        success: false,
+                        originalLine: lineIndex + 1,
+                        isGeneratedDate: true,
+                        source: source
+                    });
+                }
+                this.log(`Generated ${daysInMonth} date variations for line ${lineIndex + 1}: ${firstName} ${lastName} (month ${month}/${year})`);
+            }
+            // Handle normal dates
+            else if (this.isValidDate(dob)) {
+                const county = this.getCountyFromZip(zip);
+                records.push({
+                    zip,
+                    county,
+                    firstName,
+                    lastName,
+                    dob: dob,
+                    attempts: 0,
+                    success: false,
+                    originalLine: lineIndex + 1,
+                    isGeneratedDate: false,
+                    source: source
+                });
+                this.log(`Loaded record from line ${lineIndex + 1}: ${firstName} ${lastName} (${dob})`);
+            } else {
+                this.log(`Skipping invalid date on line ${lineIndex + 1}: ${dob} for ${firstName} ${lastName}`);
+            }
+
+            return records;
         }
 
         // Add this method to normalize dates with month names
