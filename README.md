@@ -127,7 +127,13 @@ and even for continuous days of that month.
     zip,firstname,lastname,MM/00/YYYY
 
 
-Feel free to input the values, you can repeat this; will need to run in private mode (mobile); also can delete cookies in dev mode (desktop).
+Also does direct input and year range
+
+Example
+
+ZIP,FirstName,LastName,DOB-DOB
+
+DOB-DOB Will turn into a next year for that month.
 
 ## Firefox
 
@@ -204,7 +210,10 @@ Should clear for you however automatically since the [recent update](https://git
 
 [universal-search.js](./SCRIPTS/universal-search.js)
 
-[pavoter-bulk.js](./SCRIPTS/pavoter-bulk.js)
+[pavoter-bulk-dev.js](./SCRIPTS/pavoter-bulk-dev.js)
+
+**Zip file**
+[pa-zip-mapping.js](./SCRIPTS/pa-zip-mapping.js)
 
 
 **This one has no zip codes, just a base template.**
