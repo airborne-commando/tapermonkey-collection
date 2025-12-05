@@ -189,6 +189,7 @@
             directSection.style.display = 'none';
             directSection.innerHTML = `
                 <label style="display: block; margin-bottom: 8px; font-weight: bold; font-size: ${this.isMobile ? '14px' : '16px'};">Direct Input:</label>
+                <label style="display: block; margin-bottom: 8px; font-size: ${this.isMobile ? '14px' : '16px'};">ZIP,First,LastName,DOB MM/DD/YYYY</label>
                 <textarea id="directInput" rows="5" placeholder="Enter one voter per line&#10;Format: ZIP,FirstName,LastName,DOB&#10;Example: 19001,John,Smith,01/15/1985&#10;19002,Jane,Doe,02/28/1990" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: ${this.isMobile ? '14px' : '14px'}; margin-bottom: 10px;"></textarea>
                 <button id="loadDirectBtn" style="background: #9b59b6; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; width: 100%; margin-bottom: 10px; font-size: ${this.isMobile ? '14px' : '14px'};">Load Direct Input</button>
                 <small style="color: #666; font-size: ${this.isMobile ? '12px' : '14px'};">Separate entries with new lines. DOB can be MM/DD/YYYY or month names (Jan, January, etc.)</small>
