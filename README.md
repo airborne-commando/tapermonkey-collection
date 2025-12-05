@@ -137,7 +137,7 @@ DOB-DOB Will turn into a next year for that month.
 
 **If the script doesn't work**
 
-**Reload the page**
+Reload the page
 
 ***If it still doesn't work***
 
