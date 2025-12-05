@@ -331,10 +331,10 @@
                 this.zipMapping = window.getZipMapping();
                 const statusElement = document.getElementById('zipMappingStatus');
                 if (statusElement) {
-                    statusElement.textContent = `✓ ZIP code mapping loaded: ${Object.keys(this.zipMapping).length} counties`;
+                    statusElement.textContent = `✓ ZIP code mapping loaded`;
                     statusElement.style.color = '#27ae60';
                 }
-                this.log(`Loaded ${Object.keys(this.zipMapping).length} ZIP codes from external mapping`);
+                this.log(`Loaded ZIP codes from external mapping`);
             } else {
                 this.log('Warning: ZIP mapping functions not found. Using empty mapping.');
                 this.zipMapping = {};
