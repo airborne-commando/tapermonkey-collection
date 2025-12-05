@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @updateURL    https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/pavoter-bulk.js
 // @downloadURL  https://raw.githubusercontent.com/airborne-commando/tampermonkey-collection/refs/heads/main/SCRIPTS/pavoter-bulk.js
-// @version      1.8.3
+// @version      1.8.4
 // @description  Bulk check voter registration status in PA with complete ZIP code mapping, added direct input option with year range support
 // @author       airborne-commando
 // @match        https://www.pavoterservices.pa.gov/*/voterregistrationstatus.aspx
