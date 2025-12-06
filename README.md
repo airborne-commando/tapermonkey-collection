@@ -159,6 +159,8 @@ you may also need to edit the values for
 
 **CAUTION this contains a bunch of zip data! you better know what you are doing!**
 
+Best to use the GUI as to not mess anything up; can override default values.
+
 ## Example output
 
 

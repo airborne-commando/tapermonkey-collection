@@ -44,6 +44,7 @@
             this.inputData = [];
             this.results = [];
             this.zipMapping = {};
+            this.zipOverrides = {};
             this.isMobile = this.detectMobile();
 
             // Bind methods to maintain 'this' context
@@ -55,6 +56,11 @@
             this.downloadResults = this.downloadResults.bind(this);
             this.handleFileUpload = this.handleFileUpload.bind(this);
             this.handleDirectInput = this.handleDirectInput.bind(this);
+            // Remove this line: this.editZipMapping = this.editZipMapping.bind(this);
+            this.saveZipMapping = this.saveZipMapping.bind(this);
+            this.resetZipMapping = this.resetZipMapping.bind(this);
+            this.exportZipMapping = this.exportZipMapping.bind(this);
+            this.importZipMapping = this.importZipMapping.bind(this);
 
             this.init();
         }
@@ -66,7 +72,7 @@
         async init() {
             await this.waitForPageLoad();
             this.createUI();
-            this.loadZipMapping();
+            await this.loadZipMapping();
         }
 
         async waitForPageLoad() {
@@ -139,7 +145,7 @@
                     position: fixed;
                     top: 20px;
                     right: 20px;
-                    width: 450px;
+                    width: 480px;
                     background: white;
                     border: 2px solid #333;
                     border-radius: 8px;
@@ -147,14 +153,14 @@
                     z-index: 10000;
                     font-family: Arial, sans-serif;
                     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                    max-height: 80vh;
+                    max-height: 85vh;
                     overflow-y: auto;
                 `;
             }
 
             // Header
             const header = document.createElement('h3');
-            header.textContent = `PA Voter Bulk Checker v1.8.3 ${this.isMobile ? '(Mobile)' : '(Desktop)'}`;
+            header.textContent = `PA Voter Bulk Checker v1.8.6 ${this.isMobile ? '(Mobile)' : '(Desktop)'}`;
             header.style.cssText = 'margin-top: 0; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: ' + (this.isMobile ? '16px' : '18px') + ';';
 
             // Input Method Tabs
@@ -171,8 +177,14 @@
             directTab.style.cssText = 'flex: 1; padding: 8px; border: none; background: #95a5a6; color: white; cursor: pointer;';
             directTab.addEventListener('click', () => this.showTab('direct'));
 
+            const zipTab = document.createElement('button');
+            zipTab.textContent = 'ZIP Mapping';
+            zipTab.style.cssText = 'flex: 1; padding: 8px; border: none; background: #95a5a6; color: white; cursor: pointer;';
+            zipTab.addEventListener('click', () => this.showTab('zip'));
+
             tabs.appendChild(fileTab);
             tabs.appendChild(directTab);
+            tabs.appendChild(zipTab);
 
             // File Upload Section
             const fileSection = document.createElement('div');
@@ -183,7 +195,7 @@
                 <small style="color: #666; font-size: ${this.isMobile ? '12px' : '14px'};">Format: ZIP,FirstName,LastName,DOB (MM/DD/YYYY or month/00/YYYY)</small>
             `;
 
-            // Direct Input Section (initially hidden)
+            // Direct Input Section
             const directSection = document.createElement('div');
             directSection.id = 'direct-section';
             directSection.style.display = 'none';
@@ -204,6 +216,58 @@
                 </div>
                 <button id="loadDirectBtn" style="background: #9b59b6; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; width: 100%; margin-bottom: 10px; font-size: ${this.isMobile ? '14px' : '14px'};">Load Direct Input</button>
                 <small style="color: #666; font-size: ${this.isMobile ? '11px' : '12px'};">Note: Year range expansion works for month/00/YYYY-YYYY format only</small>
+            `;
+
+            // ZIP Mapping Section
+            const zipSection = document.createElement('div');
+            zipSection.id = 'zip-section';
+            zipSection.style.display = 'none';
+            zipSection.innerHTML = `
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; font-size: ${this.isMobile ? '14px' : '16px'};">ZIP Code Management</label>
+
+                    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                        <input type="text" id="zipCodeInput" placeholder="Enter ZIP Code" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: ${this.isMobile ? '14px' : '14px'}">
+                        <input type="text" id="countyInput" placeholder="Enter County" style="flex: 2; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: ${this.isMobile ? '14px' : '14px'}">
+                    </div>
+
+                    <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                        <button id="addZipBtn" style="flex: 1; background: #27ae60; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: ${this.isMobile ? '14px' : '14px'}">Add/Update ZIP</button>
+                        <button id="removeZipBtn" style="flex: 1; background: #e74c3c; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: ${this.isMobile ? '14px' : '14px'}">Remove ZIP</button>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                        <button id="exportZipBtn" style="flex: 1; background: #3498db; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: ${this.isMobile ? '14px' : '14px'}">Export Mapping</button>
+                        <button id="importZipBtn" style="flex: 1; background: #9b59b6; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: ${this.isMobile ? '14px' : '14px'}">Import Mapping</button>
+                    </div>
+
+                    <div style="margin-bottom: 10px;">
+                        <button id="resetZipBtn" style="background: #f39c12; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; width: 100%; font-size: ${this.isMobile ? '14px' : '14px'}">Reset to Default Mapping</button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; font-size: ${this.isMobile ? '14px' : '16px'};">ZIP Code Lookup</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="zipLookupInput" placeholder="Lookup ZIP Code" style="flex: 2; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: ${this.isMobile ? '14px' : '14px'}">
+                        <button id="lookupZipBtn" style="flex: 1; background: #2c3e50; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: ${this.isMobile ? '14px' : '14px'}">Lookup</button>
+                    </div>
+                </div>
+
+                <div id="zipLookupResult" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; border: 1px solid #dee2e6; min-height: 40px; font-size: ${this.isMobile ? '12px' : '13px'};">
+                    Lookup result will appear here...
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <div style="font-weight: bold; margin-bottom: 8px; font-size: ${this.isMobile ? '14px' : '16px'};">Current ZIP Mapping Status</div>
+                    <div id="zipMappingStats" style="font-size: ${this.isMobile ? '12px' : '13px'}; color: #666;">
+                        Loading...
+                    </div>
+                </div>
+
+                <small style="color: #666; display: block; font-size: ${this.isMobile ? '11px' : '12px'};">
+                    Note: Custom ZIP mappings override default mappings. ZIP codes like 15068 can be in multiple counties.
+                </small>
             `;
 
             // ZIP Mapping Status
@@ -276,6 +340,7 @@
             container.appendChild(tabs);
             container.appendChild(fileSection);
             container.appendChild(directSection);
+            container.appendChild(zipSection);
             container.appendChild(zipStatus);
             container.appendChild(controls);
             container.appendChild(progress);
@@ -287,6 +352,7 @@
             // Store references for tab switching
             this.fileTab = fileTab;
             this.directTab = directTab;
+            this.zipTab = zipTab;
             this.mobileToggle = mobileToggle;
 
             // Event listeners using addEventListener instead of onclick
@@ -297,23 +363,48 @@
             document.getElementById('voterFile').addEventListener('change', this.handleFileUpload);
             document.getElementById('loadDirectBtn').addEventListener('click', this.handleDirectInput);
 
+            // ZIP mapping event listeners
+            document.getElementById('addZipBtn').addEventListener('click', () => this.saveZipMapping());
+            document.getElementById('removeZipBtn').addEventListener('click', () => this.removeZipMapping());
+            document.getElementById('lookupZipBtn').addEventListener('click', () => this.lookupZip());
+            document.getElementById('exportZipBtn').addEventListener('click', this.exportZipMapping);
+            document.getElementById('importZipBtn').addEventListener('click', this.importZipMapping);
+            document.getElementById('resetZipBtn').addEventListener('click', this.resetZipMapping);
+
+            // Add enter key support for ZIP lookup
+            document.getElementById('zipLookupInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') this.lookupZip();
+            });
+
             this.log('UI initialized successfully - ' + (this.isMobile ? 'Mobile' : 'Desktop') + ' mode');
         }
 
         showTab(tabName) {
             const fileSection = document.getElementById('file-section');
             const directSection = document.getElementById('direct-section');
+            const zipSection = document.getElementById('zip-section');
 
+            // Hide all sections
+            fileSection.style.display = 'none';
+            directSection.style.display = 'none';
+            zipSection.style.display = 'none';
+
+            // Reset all tab colors
+            this.fileTab.style.background = '#95a5a6';
+            this.directTab.style.background = '#95a5a6';
+            this.zipTab.style.background = '#95a5a6';
+
+            // Show selected section and highlight tab
             if (tabName === 'file') {
                 fileSection.style.display = 'block';
-                directSection.style.display = 'none';
                 this.fileTab.style.background = '#3498db';
-                this.directTab.style.background = '#95a5a6';
-            } else {
-                fileSection.style.display = 'none';
+            } else if (tabName === 'direct') {
                 directSection.style.display = 'block';
-                this.fileTab.style.background = '#95a5a6';
                 this.directTab.style.background = '#9b59b6';
+            } else if (tabName === 'zip') {
+                zipSection.style.display = 'block';
+                this.zipTab.style.background = '#e67e22';
+                this.updateZipStats();
             }
         }
 
@@ -337,40 +428,287 @@
         }
 
         loadZipMapping() {
-            // Check if ZIP mapping functions are available from external script
-            if (typeof window.getZipMapping === 'function') {
-                this.zipMapping = window.getZipMapping();
+            try {
+                // Load cached ZIP overrides
+                const cachedOverrides = GM_getValue('zipOverrides', {});
+                this.zipOverrides = cachedOverrides;
+
+                // Load default mapping from external script
+                let defaultMapping = {};
+                if (typeof window.getZipMapping === 'function') {
+                    defaultMapping = window.getZipMapping();
+                }
+
+                // Combine mappings (overrides take precedence)
+                this.zipMapping = { ...defaultMapping, ...this.zipOverrides };
+
                 const statusElement = document.getElementById('zipMappingStatus');
                 if (statusElement) {
-                    statusElement.textContent = `✓ ZIP code mapping loaded`;
+                    const totalZips = Object.keys(this.zipMapping).length;
+                    const customZips = Object.keys(this.zipOverrides).length; // Moved here
+                    const defaultZips = totalZips - customZips;
+
+                    statusElement.textContent = `✓ ZIP mapping: ${totalZips} total (${customZips} custom overrides)`;
                     statusElement.style.color = '#27ae60';
                 }
-                this.log(`Loaded ZIP codes from external mapping`);
-            } else {
-                this.log('Warning: ZIP mapping functions not found. Using empty mapping.');
+
+                // Move these calculations inside the try block
+                const totalZips = Object.keys(this.zipMapping).length;
+                const customZips = Object.keys(this.zipOverrides).length;
+                const defaultZips = totalZips - customZips;
+
+                this.log(`Loaded ZIP mapping: ${defaultZips} defaults + ${customZips} custom overrides`);
+
+            } catch (error) {
+                this.log(`Error loading ZIP mapping: ${error}`);
                 this.zipMapping = {};
+                this.zipOverrides = {};
+
                 const statusElement = document.getElementById('zipMappingStatus');
                 if (statusElement) {
-                    statusElement.textContent = '✗ ZIP mapping not available';
+                    statusElement.textContent = '✗ ZIP mapping error';
                     statusElement.style.color = '#e74c3c';
                 }
             }
         }
 
-        getCountyFromZip(zip) {
-            // First try the external mapping
-            if (typeof window.getCountyFromZip === 'function') {
-                const county = window.getCountyFromZip(zip);
-                if (county) return county;
+        saveZipMapping() {
+            const zipInput = document.getElementById('zipCodeInput');
+            const countyInput = document.getElementById('countyInput');
+
+            const zip = zipInput.value.trim();
+            const county = countyInput.value.trim().toUpperCase();
+
+            if (!zip || !county) {
+                this.log('Please enter both ZIP code and county');
+                return;
             }
 
-            // Fallback to internal mapping
-            const county = this.zipMapping[zip];
-            if (!county) {
-                this.log(`Warning: No county found for ZIP code ${zip}, using ERIE as default`);
-                return 'ERIE';
+            if (!/^\d{5}$/.test(zip)) {
+                this.log('Please enter a valid 5-digit ZIP code');
+                return;
             }
-            return county;
+
+            // Save to overrides
+            this.zipOverrides[zip] = county;
+            this.zipMapping[zip] = county; // Update combined mapping
+
+            // Save to storage
+            GM_setValue('zipOverrides', this.zipOverrides);
+
+            // Clear inputs
+            zipInput.value = '';
+            countyInput.value = '';
+
+            this.log(`Saved custom mapping: ${zip} → ${county}`);
+            this.updateZipStats();
+
+            // If this ZIP was in default mapping, show note
+            if (typeof window.getZipMapping === 'function') {
+                const defaultMapping = window.getZipMapping();
+                if (defaultMapping[zip] && defaultMapping[zip] !== county) {
+                    this.log(`Note: ${zip} was originally mapped to ${defaultMapping[zip]}, now overridden to ${county}`);
+                }
+            }
+        }
+
+        removeZipMapping() {
+            const zipInput = document.getElementById('zipCodeInput');
+            const zip = zipInput.value.trim();
+
+            if (!zip) {
+                this.log('Please enter a ZIP code to remove');
+                return;
+            }
+
+            if (this.zipOverrides[zip]) {
+                delete this.zipOverrides[zip];
+
+                // Update combined mapping - revert to default if available
+                if (typeof window.getZipMapping === 'function') {
+                    const defaultMapping = window.getZipMapping();
+                    if (defaultMapping[zip]) {
+                        this.zipMapping[zip] = defaultMapping[zip];
+                    } else {
+                        delete this.zipMapping[zip];
+                    }
+                } else {
+                    delete this.zipMapping[zip];
+                }
+
+                GM_setValue('zipOverrides', this.zipOverrides);
+
+                this.log(`Removed custom mapping for ZIP: ${zip}`);
+                this.updateZipStats();
+            } else {
+                this.log(`No custom mapping found for ZIP: ${zip}`);
+            }
+
+            zipInput.value = '';
+        }
+
+        lookupZip() {
+            const lookupInput = document.getElementById('zipLookupInput');
+            const resultElement = document.getElementById('zipLookupResult');
+
+            const zip = lookupInput.value.trim();
+
+            if (!zip) {
+                resultElement.innerHTML = '<span style="color: #e74c3c;">Please enter a ZIP code</span>';
+                return;
+            }
+
+            if (!/^\d{5}$/.test(zip)) {
+                resultElement.innerHTML = '<span style="color: #e74c3c;">Please enter a valid 5-digit ZIP code</span>';
+                return;
+            }
+
+            const county = this.getCountyFromZip(zip);
+
+            let resultHTML = `<strong>ZIP ${zip}:</strong><br>`;
+            resultHTML += `County: <strong>${county}</strong><br>`;
+
+            // Check if this is a custom override
+            if (this.zipOverrides[zip]) {
+                resultHTML += `<span style="color: #27ae60;">(Custom override)</span><br>`;
+            }
+
+            // Check if there's a default mapping
+            if (typeof window.getZipMapping === 'function') {
+                const defaultMapping = window.getZipMapping();
+                if (defaultMapping[zip] && defaultMapping[zip] !== county) {
+                    resultHTML += `Default mapping: ${defaultMapping[zip]}<br>`;
+                }
+            }
+
+            // Show example usage
+            resultHTML += `<br><small>Example input line:</small><br>`;
+            resultHTML += `<code style="background: #f8f9fa; padding: 2px 4px; border-radius: 3px;">${zip},John,Smith,01/15/1985</code>`;
+
+            resultElement.innerHTML = resultHTML;
+        }
+
+        updateZipStats() {
+            const statsElement = document.getElementById('zipMappingStats');
+            if (!statsElement) return;
+
+            const totalZips = Object.keys(this.zipMapping).length;
+            const customZips = Object.keys(this.zipOverrides).length;
+            const defaultZips = totalZips - customZips;
+
+            statsElement.innerHTML = `
+                <div>Total ZIP codes mapped: <strong>${totalZips}</strong></div>
+                <div>Default mappings: <strong>${defaultZips}</strong></div>
+                <div>Custom overrides: <strong>${customZips}</strong></div>
+                <div style="margin-top: 5px; font-size: ${this.isMobile ? '11px' : '12px'}">
+                    Examples of ambiguous ZIPs:<br>
+                    <code style="background: #f8f9fa; padding: 2px 4px; margin: 2px; border-radius: 3px;">15068</code>
+                    <code style="background: #f8f9fa; padding: 2px 4px; margin: 2px; border-radius: 3px;">17702</code>
+                    <code style="background: #f8f9fa; padding: 2px 4px; margin: 2px; border-radius: 3px;">17011</code>
+                </div>
+            `;
+        }
+
+        getCountyFromZip(zip) {
+            // First check custom overrides
+            if (this.zipOverrides[zip]) {
+                return this.zipOverrides[zip];
+            }
+
+            // Then check combined mapping
+            const county = this.zipMapping[zip];
+            if (county) {
+                return county;
+            }
+
+            // Fallback to external function if available
+            if (typeof window.getCountyFromZip === 'function') {
+                const externalCounty = window.getCountyFromZip(zip);
+                if (externalCounty) return externalCounty;
+            }
+
+            // Ultimate fallback
+            this.log(`Warning: No county found for ZIP code ${zip}, using ERIE as default`);
+            return 'ERIE';
+        }
+
+        resetZipMapping() {
+            if (confirm('Reset all custom ZIP mappings to defaults? This cannot be undone.')) {
+                this.zipOverrides = {};
+                GM_setValue('zipOverrides', {});
+
+                // Reload default mapping
+                if (typeof window.getZipMapping === 'function') {
+                    this.zipMapping = window.getZipMapping();
+                } else {
+                    this.zipMapping = {};
+                }
+
+                this.log('Reset all ZIP mappings to defaults');
+                this.updateZipStats();
+            }
+        }
+
+        exportZipMapping() {
+            const data = JSON.stringify(this.zipOverrides, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `zip_mapping_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            this.log(`Exported ${Object.keys(this.zipOverrides).length} custom ZIP mappings`);
+        }
+
+        importZipMapping() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json';
+
+            fileInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedOverrides = JSON.parse(e.target.result);
+
+                        // Validate imported data
+                        if (typeof importedOverrides !== 'object') {
+                            throw new Error('Invalid JSON format');
+                        }
+
+                        // Merge imported overrides with existing
+                        Object.assign(this.zipOverrides, importedOverrides);
+
+                        // Update combined mapping
+                        if (typeof window.getZipMapping === 'function') {
+                            const defaultMapping = window.getZipMapping();
+                            this.zipMapping = { ...defaultMapping, ...this.zipOverrides };
+                        } else {
+                            this.zipMapping = { ...this.zipOverrides };
+                        }
+
+                        // Save to storage
+                        GM_setValue('zipOverrides', this.zipOverrides);
+
+                        this.log(`Imported ${Object.keys(importedOverrides).length} ZIP mappings`);
+                        this.updateZipStats();
+
+                    } catch (error) {
+                        this.log(`Error importing ZIP mappings: ${error}`);
+                    }
+                };
+
+                reader.readAsText(file);
+            };
+
+            fileInput.click();
         }
 
         updateProgress() {
